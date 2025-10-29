@@ -1,6 +1,6 @@
 ﻿# Reserva Salas - Proyecto UCU (estructura de repo)
 
-Instrucciones rÃ¡pidas:
+Instrucciones rápidas:
 1. Levantar MySQL y ejecutar create_db.sql (MySQL Workbench o terminal).
 2. Ajustar variables de entorno en backend/config.py o exportar env vars.
 3. Instalar dependencias: pip install -r backend/requirements.txt
@@ -11,3 +11,4 @@ Instrucciones rÃ¡pidas:
 Notas de seguridad:
 - No incluir credenciales reales en el repo.
 - Usar SMTP seguro y variables de entorno para secretos.
+
