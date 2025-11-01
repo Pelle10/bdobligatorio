@@ -1,7 +1,10 @@
-﻿from mysql.connector.pooling import MySQLConnectionPool
-from config import DB_CONFIG
-
-pool = MySQLConnectionPool(pool_name='mypool', pool_size=8, **DB_CONFIG)
+﻿import mysql.connector
+import os
 
 def get_conn():
-    return pool.get_connection()
+    return mysql.connector.connect(
+        host=os.environ.get("DB_HOST", "localhost"),
+        user=os.environ.get("DB_USER", "root"),
+        password=os.environ.get("DB_PASS", ""),
+        database=os.environ.get("DB_NAME", "reserva_salas")
+    )
