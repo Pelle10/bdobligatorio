@@ -1,11 +1,10 @@
-﻿-- create_db.sql
--- Sistema de Reserva de Salas - UCU
--- Creación de BD, tablas, datos maestros, y triggers bÃ¡sicos para reglas de negocio
+﻿-- Sistema de Reserva de Salas - UCU
+-- Creación de BD y triggers básicos para reglas de negocio
 DROP DATABASE IF EXISTS reserva_salas;
 CREATE DATABASE IF NOT EXISTS reserva_salas CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE reserva_salas;
 
--- TABLAS BASE
+-- TABLAS
 CREATE TABLE facultad (
     id_facultad INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(150) NOT NULL
@@ -113,60 +112,7 @@ CREATE TABLE IF NOT EXISTS notificacion (
     FOREIGN KEY (ci_participante) REFERENCES participante(ci)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- DATOS MAESTROS DE EJEMPLO
-INSERT INTO facultad (nombre) VALUES
-('IngenierÃ­a'), ('Ciencias Empresariales'), ('Derecho');
-
-INSERT INTO programa_academico (nombre_programa, id_facultad, tipo) VALUES
-('IngenierÃ­a en InformÃ¡tica', 1, 'grado'),
-('IngenierÃ­a Civil', 1, 'grado'),
-('MBA', 2, 'posgrado'),
-('EspecializaciÃ³n en Derecho Civil', 3, 'posgrado');
-
-INSERT INTO participante (ci, nombre, apellido, email) VALUES
-('12345678', 'Santiago', 'Pellejero', 'spellejero@ucu.edu.uy'),
-('98765432', 'MarÃ­a', 'RodrÃ­guez', 'mrodriguez@ucu.edu.uy'),
-('11112222', 'Carlos', 'GonzÃ¡lez', 'cgonzalez@ucu.edu.uy'),
-('22223333', 'LucÃ­a', 'FernÃ¡ndez', 'lfernandez@ucu.edu.uy');
-
-INSERT INTO login (email, password, role) VALUES
-('spellejero@ucu.edu.uy', 'hash_pwd_sample_1', 'admin'),
-('mrodriguez@ucu.edu.uy', 'hash_pwd_sample_2', 'alumno');
-
-INSERT INTO participante_programa_academico (ci_participante, id_programa, rol) VALUES
-('12345678', 1, 'alumno'),
-('98765432', 3, 'alumno'),
-('11112222', 1, 'docente'),
-('22223333', 4, 'alumno');
-
-INSERT INTO edificio (nombre_edificio, direccion, departamento) VALUES
-('Edificio Central', 'Av. 8 de Octubre 2738', 'Montevideo'),
-('Biblioteca Norte', 'Bvar. EspaÃ±a 1234', 'Montevideo');
-
-INSERT INTO sala (nombre_sala, id_edificio, capacidad, tipo_sala) VALUES
-('Sala A1', 1, 6, 'libre'),
-('Sala A2', 1, 4, 'libre'),
-('Sala Posgrado 1', 2, 8, 'posgrado'),
-('Sala Docentes 1', 1, 4, 'docente');
-
-INSERT INTO turno (hora_inicio, hora_fin) VALUES
-('08:00:00','09:00:00'),
-('09:00:00','10:00:00'),
-('10:00:00','11:00:00'),
-('11:00:00','12:00:00'),
-('12:00:00','13:00:00'),
-('13:00:00','14:00:00'),
-('14:00:00','15:00:00'),
-('15:00:00','16:00:00'),
-('16:00:00','17:00:00'),
-('17:00:00','18:00:00'),
-('18:00:00','19:00:00'),
-('19:00:00','20:00:00'),
-('20:00:00','21:00:00'),
-('21:00:00','22:00:00'),
-('22:00:00','23:00:00');
-
--- TRIGGERS: Validaciones y sanciones automÃ¡ticas (resumen)
+-- TRIGGERS
 DELIMITER 
 CREATE TRIGGER trg_before_insert_reserva_participante
 BEFORE INSERT ON reserva_participante
