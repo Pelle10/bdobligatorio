@@ -1,43 +1,103 @@
 {% extends "base.html" %}
 {% block title %}Salas - Admin{% endblock %}
+
 {% block content %}
 <h1 class="text-white mb-4"><i class="bi bi-building"></i> Gestión de Salas</h1>
+
 <div class="card">
-    <div class="card-header bg-info text-white">
-        <h4 class="mb-0">Lista de Salas</h4>
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Lista de Salas</h5>
+        <div>
+            <a href="{{ url_for('admin_crear_edificio') }}" class="btn btn-light btn-sm me-2">
+                <i class="bi bi-building-add"></i> Nuevo Edificio
+            </a>
+            <a href="{{ url_for('admin_crear_sala') }}" class="btn btn-success btn-sm">
+                <i class="bi bi-plus-circle"></i> Nueva Sala
+            </a>
+        </div>
     </div>
     <div class="card-body">
+        {% if salas %}
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
                     <tr>
                         <th>Sala</th>
                         <th>Edificio</th>
                         <th>Dirección</th>
                         <th>Capacidad</th>
                         <th>Tipo</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for s in salas %}
+                {% for s in salas %}
                     <tr>
                         <td><strong>{{ s.nombre_sala }}</strong></td>
                         <td>{{ s.edificio }}</td>
-                        <td>{{ s.direccion }}</td>
-                        <td><span class="badge bg-info">{{ s.capacidad }}</span></td>
+                        <td><small>{{ s.direccion }}</small></td>
                         <td>
-                            {% if s.tipo_sala == 'libre' %}
-                                <span class="badge bg-success">Libre</span>
-                            {% elif s.tipo_sala == 'posgrado' %}
-                                <span class="badge bg-warning">Posgrado</span>
-                            {% else %}
-                                <span class="badge bg-danger">Docente</span>
-                            {% endif %}
+                            <span class="badge bg-info">{{ s.capacidad }} personas</span>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if s.tipo_sala == 'auditorio' %}bg-danger
+                                {% elif s.tipo_sala == 'salón' %}bg-primary
+                                {% elif s.tipo_sala == 'laboratorio' %}bg-warning
+                                {% else %}bg-success{% endif %}">
+                                {{ s.tipo_sala }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('admin_editar_sala', nombre_sala=s.nombre_sala, edificio=s.edificio) }}" 
+                                   class="btn btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="POST" 
+                                      action="{{ url_for('admin_eliminar_sala', nombre_sala=s.nombre_sala, edificio=s.edificio) }}" 
+                                      class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger" 
+                                            onclick="return confirm('¿Está seguro de eliminar esta sala? Solo se puede eliminar si no tiene reservas activas o futuras.')"
+                                            title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
-                    {% endfor %}
+                {% endfor %}
                 </tbody>
             </table>
+        </div>
+        {% else %}
+            <p class="text-muted">No hay salas registradas.</p>
+            <a href="{{ url_for('admin_crear_sala') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Crear Primera Sala
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Leyenda de tipos de sala -->
+<div class="card mt-3 bg-light">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-info-circle"></i> Tipos de Sala</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <span class="badge bg-danger">Auditorio</span> - Solo docentes
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-primary">Salón</span> - Solo alumnos de grado
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-warning">Laboratorio</span> - Solo alumnos de posgrado
+            </div>
+            <div class="col-md-3">
+                <span class="badge bg-success">Biblioteca</span> - Todos los usuarios
+            </div>
         </div>
     </div>
 </div>

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Editar Reserva - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-white mb-4">
+        <i class="bi bi-calendar-event"></i> Editar Reserva #{{ reserva.id_reserva }}
+    </h1>
+
+    <div class="row">
+        <!-- Formulario -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Datos de la Reserva</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Sala *</label>
+                            <select class="form-select" name="nombre_sala" required id="selectSala">
+                                {% for sala in salas %}
+                                <option value="{{ sala.nombre_sala }}" 
+                                        data-edificio="{{ sala.edificio }}"
+                                        {% if sala.nombre_sala == reserva.nombre_sala and sala.edificio == reserva.edificio %}selected{% endif %}>
+                                    {{ sala.nombre_sala }} - {{ sala.edificio }} (Cap: {{ sala.capacidad }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <input type="hidden" name="edificio" id="edificio" value="{{ reserva.edificio }}">
+
+                        <div class="mb-3">
+                            <label class="form-label">Fecha *</label>
+                            <input type="date" class="form-control" name="fecha" 
+                                   value="{{ reserva.fecha }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Turno *</label>
+                            <select class="form-select" name="id_turno" required>
+                                {% for turno in turnos %}
+                                <option value="{{ turno.id_turno }}" 
+                                        {% if turno.id_turno == reserva.id_turno %}selected{% endif %}>
+                                    {{ turno.hora_inicio }} - {{ turno.hora_fin }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Advertencia:</strong> Al cambiar sala, fecha o turno, asegúrate de que el nuevo horario esté disponible.
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-save"></i> Guardar Cambios
+                            </button>
+                            <a href="{{ url_for('admin_reservas') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info y Acciones -->
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">Estado Actual</h6>
+                </div>
+                <div class="card-body">
+                    <h4>
+                        <span class="badge 
+                            {% if reserva.estado == 'activa' %}bg-success
+                            {% elif reserva.estado == 'cancelada' %}bg-danger
+                            {% elif reserva.estado == 'finalizada' %}bg-secondary
+                            {% else %}bg-warning{% endif %}">
+                            {{ reserva.estado.upper() }}
+                        </span>
+                    </h4>
+
+                    <hr>
+
+                    <form method="POST" action="{{ url_for('admin_cambiar_estado_reserva', id_reserva=reserva.id_reserva) }}">
+                        <label class="form-label">Cambiar Estado:</label>
+                        <select class="form-select form-select-sm mb-2" name="estado">
+                            <option value="activa">Activa</option>
+                            <option value="cancelada">Cancelada</option>
+                            <option value="finalizada">Finalizada</option>
+                            <option value="sin asistencia">Sin Asistencia</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-primary w-100">
+                            <i class="bi bi-arrow-repeat"></i> Actualizar Estado
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0">Participantes</h6>
+                </div>
+                <div class="card-body">
+                    {% if reserva.participantes %}
+                        <ul class="list-group list-group-flush">
+                        {% for part in reserva.participantes %}
+                            <li class="list-group-item px-0 py-2">
+                                <small>
+                                    <strong>{{ part.nombre }} {{ part.apellido }}</strong><br>
+                                    CI: {{ part.ci_participante }}
+                                    {% if part.asistencia == 1 %}
+                                        <span class="badge bg-success">Asistió</span>
+                                    {% elif part.asistencia == 0 %}
+                                        <span class="badge bg-danger">No asistió</span>
+                                    {% endif %}
+                                </small>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">Sin participantes</p>
+                    {% endif %}
+
+                    <a href="{{ url_for('admin_gestionar_participantes_reserva', id_reserva=reserva.id_reserva) }}" 
+                       class="btn btn-sm btn-outline-primary w-100 mt-3">
+                        <i class="bi bi-people"></i> Gestionar Participantes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Actualizar edificio al cambiar sala
+document.getElementById('selectSala').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    document.getElementById('edificio').value = selectedOption.dataset.edificio;
+});
+</script>
+{% endblock %}

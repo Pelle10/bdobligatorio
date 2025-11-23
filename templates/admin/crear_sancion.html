@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Crear Sanción - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-white mb-4">
+        <i class="bi bi-exclamation-triangle"></i> Crear Nueva Sanción
+    </h1>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Datos de la Sanción</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Participante *</label>
+                            <select class="form-select" name="ci_participante" required id="selectParticipante">
+                                <option value="">Seleccionar participante...</option>
+                                {% for part in participantes %}
+                                <option value="{{ part.ci }}">
+                                    {{ part.nombre }} {{ part.apellido }} (CI: {{ part.ci }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Fecha de Inicio *</label>
+                                <input type="date" class="form-control" name="fecha_inicio" 
+                                       required id="fechaInicio">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Fecha de Fin *</label>
+                                <input type="date" class="form-control" name="fecha_fin" 
+                                       required id="fechaFin">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Duración Predefinida</label>
+                            <div class="btn-group d-flex" role="group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="setDuracion(7)">
+                                    7 días
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setDuracion(15)">
+                                    15 días
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setDuracion(30)">
+                                    1 mes
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setDuracion(60)">
+                                    2 meses
+                                </button>
+                            </div>
+                            <small class="text-muted">Haz clic para establecer una duración automática</small>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Validaciones:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>La fecha de fin debe ser posterior a la fecha de inicio</li>
+                                <li>No puede solaparse con otras sanciones del mismo participante</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-plus-circle"></i> Crear Sanción
+                            </button>
+                            <a href="{{ url_for('admin_sanciones') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info adicional -->
+            <div class="card mt-3 bg-light">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Información</h6>
+                </div>
+                <div class="card-body">
+                    <h6>Consecuencias de una Sanción:</h6>
+                    <ul>
+                        <li>El participante no podrá realizar nuevas reservas durante el período sancionado</li>
+                        <li>Las reservas existentes no se cancelan automáticamente</li>
+                        <li>La sanción se puede modificar o eliminar posteriormente</li>
+                    </ul>
+
+                    <h6 class="mt-3">Duraciones Típicas:</h6>
+                    <ul>
+                        <li><strong>7 días:</strong> Sanción leve (primera infracción)</li>
+                        <li><strong>15 días:</strong> Sanción moderada (reincidencia)</li>
+                        <li><strong>30 días:</strong> Sanción grave</li>
+                        <li><strong>60 días:</strong> Sanción muy grave (inasistencia sin aviso)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Establecer fecha de inicio a hoy por defecto
+document.getElementById('fechaInicio').valueAsDate = new Date();
+
+// Función para establecer duración predefinida
+function setDuracion(dias) {
+    const fechaInicio = document.getElementById('fechaInicio').valueAsDate || new Date();
+    const fechaFin = new Date(fechaInicio);
+    fechaFin.setDate(fechaFin.getDate() + dias);
+    
+    document.getElementById('fechaInicio').valueAsDate = fechaInicio;
+    document.getElementById('fechaFin').valueAsDate = fechaFin;
+}
+
+// Validar que fecha fin sea posterior a fecha inicio
+document.getElementById('fechaFin').addEventListener('change', function() {
+    const fechaInicio = new Date(document.getElementById('fechaInicio').value);
+    const fechaFin = new Date(this.value);
+    
+    if (fechaFin <= fechaInicio) {
+        alert('La fecha de fin debe ser posterior a la fecha de inicio');
+        this.value = '';
+    }
+});
+</script>
+{% endblock %}
