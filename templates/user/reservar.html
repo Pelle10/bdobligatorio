@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Reserva{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="bi bi-calendar-plus"></i> Nueva Reserva</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('user_reservar') }}">
+                    <div class="mb-4">
+                        <label for="sala" class="form-label">
+                            <i class="bi bi-door-open"></i> Selecciona una Sala
+                        </label>
+                        <select class="form-select form-select-lg" id="sala" required onchange="updateSalaInfo()">
+                            <option value="">-- Selecciona una sala --</option>
+                            {% for sala in salas %}
+                            <option value="{{ sala.nombre_sala }}|{{ sala.edificio }}" 
+                                    data-capacidad="{{ sala.capacidad }}"
+                                    data-tipo="{{ sala.tipo_sala }}">
+                                {{ sala.nombre_sala }} - {{ sala.edificio }} ({{ sala.tipo_sala }}, Cap: {{ sala.capacidad }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <input type="hidden" id="nombre_sala" name="nombre_sala">
+                        <input type="hidden" id="edificio" name="edificio">
+                    </div>
+
+                    <div id="sala-info" class="alert alert-info d-none mb-4">
+                        <strong>Información de la sala:</strong>
+                        <p class="mb-0" id="sala-detalles"></p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha" class="form-label">
+                                <i class="bi bi-calendar3"></i> Fecha
+                            </label>
+                            <input type="date" class="form-control form-control-lg" id="fecha" name="fecha" 
+                                   min="{{ today }}" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_turno" class="form-label">
+                                <i class="bi bi-clock"></i> Turno
+                            </label>
+                            <select class="form-select form-select-lg" id="id_turno" name="id_turno" required>
+                                <option value="">-- Selecciona un turno --</option>
+                                {% for turno in turnos %}
+                                <option value="{{ turno.id_turno }}">
+                                    {{ turno.hora_inicio }} - {{ turno.hora_fin }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-info-circle"></i> Recordatorios:</h6>
+                        <ul class="mb-0">
+                            <li>Máximo 2 horas de reserva por día</li>
+                            <li>Máximo 3 reservas activas por semana</li>
+                            <li>Si no asistes, serás sancionado por 2 meses</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Confirmar Reserva
+                        </button>
+                        <a href="{{ url_for('user_dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Obtener fecha actual para el input
+document.addEventListener('DOMContentLoaded', function() {
+    var today = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha').value = today;
+    document.getElementById('fecha').setAttribute('min', today);
+});
+
+function updateSalaInfo() {
+    var select = document.getElementById('sala');
+    var selectedOption = select.options[select.selectedIndex];
+    var value = selectedOption.value;
+    
+    if (value) {
+        var parts = value.split('|');
+        document.getElementById('nombre_sala').value = parts[0];
+        document.getElementById('edificio').value = parts[1];
+        
+        var capacidad = selectedOption.getAttribute('data-capacidad');
+        var tipo = selectedOption.getAttribute('data-tipo');
+        
+        document.getElementById('sala-info').classList.remove('d-none');
+        document.getElementById('sala-detalles').innerHTML = 
+            '<strong>Capacidad:</strong> ' + capacidad + ' personas | ' +
+            '<strong>Tipo:</strong> ' + tipo;
+    } else {
+        document.getElementById('sala-info').classList.add('d-none');
+    }
+}
+</script>
+{% endblock %}

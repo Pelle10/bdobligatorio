@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Mi Panel - Usuario{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="text-white mb-4">
+            <i class="bi bi-house-door"></i> Mi Panel de Usuario
+        </h1>
+    </div>
+</div>
+
+{% if sancion %}
+<div class="alert alert-danger">
+    <h4><i class="bi bi-exclamation-triangle"></i> Sanción Activa</h4>
+    <p class="mb-0">Tienes una sanción activa desde {{ sancion.fecha_inicio }} hasta {{ sancion.fecha_fin }}.</p>
+    <p class="mb-0">No podrás realizar nuevas reservas hasta que termine la sanción.</p>
+</div>
+{% endif %}
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-calendar-plus text-primary" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Nueva Reserva</h5>
+                <p class="card-text text-muted">Reserva una sala de estudio</p>
+                <a href="{{ url_for('user_reservar') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Reservar Ahora
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-building text-info" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Ver Salas</h5>
+                <p class="card-text text-muted">Explora las salas disponibles</p>
+                <a href="{{ url_for('user_salas') }}" class="btn btn-info">
+                    <i class="bi bi-search"></i> Ver Salas
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-list-check text-success" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Mis Reservas</h5>
+                <p class="card-text text-muted">{{ reservas|length }} reservas registradas</p>
+                <a href="#mis-reservas" class="btn btn-success">
+                    <i class="bi bi-arrow-down"></i> Ver Abajo
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card" id="mis-reservas">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="bi bi-calendar3"></i> Mis Últimas Reservas</h4>
+    </div>
+    <div class="card-body">
+        {% if reservas %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Sala</th>
+                            <th>Edificio</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reserva in reservas %}
+                        <tr>
+                            <td><strong>#{{ reserva.id_reserva }}</strong></td>
+                            <td>{{ reserva.nombre_sala }}</td>
+                            <td>{{ reserva.edificio }}</td>
+                            <td>{{ reserva.fecha }}</td>
+                            <td>{{ reserva.horario }}</td>
+                            <td>
+                                {% if reserva.estado == 'activa' %}
+                                    <span class="badge bg-success">Activa</span>
+                                {% elif reserva.estado == 'cancelada' %}
+                                    <span class="badge bg-danger">Cancelada</span>
+                                {% elif reserva.estado == 'finalizada' %}
+                                    <span class="badge bg-secondary">Finalizada</span>
+                                {% else %}
+                                    <span class="badge bg-warning">{{ reserva.estado }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if reserva.estado == 'activa' %}
+                                    <form method="POST" action="{{ url_for('user_cancelar', id_reserva=reserva.id_reserva) }}" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que deseas cancelar esta reserva?');">
+                                            <i class="bi bi-x-circle"></i> Cancelar
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                <p class="text-muted mt-3">No tienes reservas registradas</p>
+                <a href="{{ url_for('user_reservar') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Crear tu Primera Reserva
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

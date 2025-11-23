@@ -1,0 +1,37 @@
+<!-- templates/admin/participantes.html -->
+{% extends "base.html" %}
+{% block title %}Participantes - Admin{% endblock %}
+{% block content %}
+<h1 class="text-white mb-4"><i class="bi bi-people"></i> Gestión de Participantes</h1>
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">Lista de Participantes</h4>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>CI</th>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>Email</th>
+                        <th>Programas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in participantes %}
+                    <tr>
+                        <td><strong>{{ p.ci }}</strong></td>
+                        <td>{{ p.nombre }}</td>
+                        <td>{{ p.apellido }}</td>
+                        <td>{{ p.email }}</td>
+                        <td><small>{{ p.programas or 'Sin programa' }}</small></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,25 +1,40 @@
-﻿version: '3.8'
 services:
-  db:
+  mysql:
     image: mysql:8.0
-    restart: always
+    container_name: reserva_mysql
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: reserva_salas
+    ports:
+      - "3307:3306"  # Puerto externo 3307, interno 3306
     volumes:
-      - db_data:/var/lib/mysql
-    ports:
-      - '3306:3306'
+      - mysql_data:/var/lib/mysql
+      - ./sql/create_db.sql:/docker-entrypoint-initdb.d/01_create_db.sql
+      - ./sql/insert_data.sql:/docker-entrypoint-initdb.d/02_insert_data.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   app:
-    build: ./backend
-    command: python app.py
-    ports:
-      - '5000:5000'
+    build: .
+    container_name: reservas_app
+    depends_on:
+      mysql:
+        condition: service_healthy
     environment:
-      DB_HOST: db
+      DB_HOST: mysql
       DB_USER: root
-      DB_PASS: rootpass
+      DB_PASSWORD: root
       DB_NAME: reserva_salas
+      DB_PORT: 3306
+    ports:  
+      - "5000:5000"
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/app
 
 volumes:
-  db_data:
+  mysql_data:
