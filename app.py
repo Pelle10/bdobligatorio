@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Aplicación Web Flask para Sistema de Reservas
-Versión Modular - Reutiliza los módulos existentes
+Versión Completa con ABM + Reportes BI
 """
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
@@ -15,46 +15,37 @@ from modules.validations import (
     validar_sancion, validar_limite_horas_dia, validar_limite_reservas_semana,
     validar_capacidad_sala, es_usuario_privilegiado, sala_compatible_usuario
 )
+from modules import participantes, salas, reservas, sanciones
 import re
 import os
 
 app = Flask(__name__)
 app.secret_key = 'reservas_salas_secret_key_2024'
-app.config['JSON_AS_ASCII'] = False  # Para caracteres UTF-8 en JSON
+app.config['JSON_AS_ASCII'] = False
 
 # ============= CARGA DE CONSULTAS SQL =============
 
 def cargar_consultas_sql(archivo='sql/consultas_reportes.sql'):
-    """
-    Carga las consultas SQL desde el archivo y las organiza por nombre.
-    Retorna un diccionario con las consultas identificadas.
-    """
+    """Carga las consultas SQL desde el archivo"""
     consultas = {}
     
     try:
-        # Leer el archivo SQL
         ruta_archivo = os.path.join(os.path.dirname(__file__), archivo)
         with open(ruta_archivo, 'r', encoding='utf-8') as f:
             contenido = f.read()
         
-        # Dividir por las secciones de CONSULTA
         secciones = re.split(r'-- =+\n-- CONSULTA (?:ADICIONAL )?(\d+):', contenido)
         
-        # Procesar cada sección (van en pares: número y contenido)
         for i in range(1, len(secciones), 2):
             numero = secciones[i]
             bloque = secciones[i + 1] if i + 1 < len(secciones) else ''
             
-            # Extraer la query SQL (después de los comentarios, hasta el siguiente --)
             sql_match = re.search(r'\n\n(SELECT.*?)(?=\n\n--|$)', bloque, re.DOTALL | re.IGNORECASE)
             if sql_match:
                 query = sql_match.group(1).strip()
-                
-                # Limpiar la query: eliminar líneas en blanco y punto y coma final
                 query = '\n'.join(line for line in query.split('\n') if line.strip())
                 query = query.rstrip(';').strip()
                 
-                # Mapear a identificadores
                 mapeo = {
                     '1': ('salas_mas_reservadas', query),
                     '2': ('turnos_demandados', query),
@@ -82,8 +73,6 @@ def cargar_consultas_sql(archivo='sql/consultas_reportes.sql'):
         print(f"⚠️  Error al cargar consultas SQL: {e}")
         return {}
 
-
-# Cargar las consultas al inicio
 CONSULTAS_SQL = cargar_consultas_sql()
 
 # ============= DECORADORES =============
@@ -175,35 +164,11 @@ def register():
             programas = ejecutar_query("SELECT * FROM programa_academico ORDER BY nombre_programa", fetchall=True)
             return render_template('register.html', programas=programas)
         
-        hash_pass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        exito, mensaje = participantes.crear_participante(ci, nombre, apellido, email, password, programa, rol)
+        flash(mensaje, 'success' if exito else 'danger')
         
-        conn = conectar()
-        if not conn:
-            flash('Error de conexión con la base de datos.', 'danger')
-            programas = ejecutar_query("SELECT * FROM programa_academico ORDER BY nombre_programa", fetchall=True)
-            return render_template('register.html', programas=programas)
-        
-        try:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO login (correo, contrasena) VALUES (%s, %s)", (email, hash_pass))
-            cursor.execute("INSERT INTO participante (ci, nombre, apellido, email) VALUES (%s, %s, %s, %s)",
-                          (ci, nombre, apellido, email))
-            cursor.execute("""
-                INSERT INTO participante_programa_academico (ci_participante, nombre_programa, rol)
-                VALUES (%s, %s, %s)
-            """, (ci, programa, rol))
-            conn.commit()
-            flash('Registro exitoso! Ya puedes iniciar sesión.', 'success')
+        if exito:
             return redirect(url_for('login'))
-        except Error as e:
-            conn.rollback()
-            if 'Duplicate entry' in str(e):
-                flash('El email o CI ya están registrados.', 'danger')
-            else:
-                flash(f'Error al registrar: {str(e)}', 'danger')
-        finally:
-            cursor.close()
-            conn.close()
     
     programas = ejecutar_query("SELECT * FROM programa_academico ORDER BY nombre_programa", fetchall=True)
     return render_template('register.html', programas=programas)
@@ -219,34 +184,19 @@ def logout():
 @app.route('/user/dashboard')
 @login_required
 def user_dashboard():
-    reservas = ejecutar_query("""
-        SELECT r.id_reserva, r.nombre_sala, r.edificio, r.fecha, r.estado,
-               CONCAT(t.hora_inicio, ' - ', t.hora_fin) as horario
-        FROM reserva r
-        JOIN turno t ON r.id_turno = t.id_turno
-        JOIN reserva_participante rp ON r.id_reserva = rp.id_reserva
-        WHERE rp.ci_participante = %s
-        ORDER BY r.fecha DESC, t.hora_inicio DESC
-        LIMIT 10
-    """, (session['user_ci'],), fetchall=True)
-    
+    reservas_list = reservas.obtener_reservas_participante(session['user_ci'])
     sancion = ejecutar_query("""
         SELECT * FROM sancion_participante
         WHERE ci_participante = %s AND CURDATE() BETWEEN fecha_inicio AND fecha_fin
     """, (session['user_ci'],), fetchone=True)
     
-    return render_template('user/dashboard.html', reservas=reservas, sancion=sancion)
+    return render_template('user/dashboard.html', reservas=reservas_list, sancion=sancion)
 
 @app.route('/user/salas')
 @login_required
 def user_salas():
-    salas = ejecutar_query("""
-        SELECT s.nombre_sala, s.edificio, s.capacidad, s.tipo_sala, e.direccion
-        FROM sala s
-        JOIN edificio e ON s.edificio = e.nombre_edificio
-        ORDER BY s.edificio, s.nombre_sala
-    """, fetchall=True)
-    return render_template('user/salas.html', salas=salas)
+    salas_list = salas.obtener_salas()
+    return render_template('user/salas.html', salas=salas_list)
 
 @app.route('/user/reservar', methods=['GET', 'POST'])
 @login_required
@@ -264,7 +214,6 @@ def user_reservar():
             flash('Datos inválidos.', 'danger')
             return redirect(url_for('user_reservar'))
         
-        # Validaciones usando módulos existentes
         if not validar_sancion(session['user_ci']):
             return redirect(url_for('user_dashboard'))
         
@@ -278,51 +227,21 @@ def user_reservar():
             if not validar_limite_reservas_semana(session['user_ci'], fecha):
                 return redirect(url_for('user_reservar'))
         
-        reserva_existente = ejecutar_query("""
-            SELECT * FROM reserva WHERE nombre_sala = %s AND edificio = %s
-            AND fecha = %s AND id_turno = %s
-        """, (nombre_sala, edificio, fecha, id_turno), fetchone=True)
+        exito, mensaje, id_nueva_reserva = reservas.crear_reserva(nombre_sala, edificio, fecha, id_turno, session['user_ci'])
         
-        if reserva_existente:
-            flash('Este turno ya está reservado.', 'warning')
-            return redirect(url_for('user_reservar'))
-        
-        conn = conectar()
-        if not conn:
-            flash('Error de conexión.', 'danger')
-            return redirect(url_for('user_reservar'))
-        
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO reserva (nombre_sala, edificio, fecha, id_turno, estado)
-                VALUES (%s, %s, %s, %s, 'activa')
-            """, (nombre_sala, edificio, fecha, id_turno))
-            
-            id_reserva = cursor.lastrowid
-            
-            if not validar_capacidad_sala(nombre_sala, edificio, id_reserva, 1):
-                conn.rollback()
+        if exito:
+            if not validar_capacidad_sala(nombre_sala, edificio, id_nueva_reserva, 1):
+                reservas.eliminar_reserva(id_nueva_reserva)
                 return redirect(url_for('user_reservar'))
             
-            cursor.execute("""
-                INSERT INTO reserva_participante (ci_participante, id_reserva)
-                VALUES (%s, %s)
-            """, (session['user_ci'], id_reserva))
-            
-            conn.commit()
-            flash(f'Reserva #{id_reserva} creada exitosamente!', 'success')
+            flash(f'Reserva #{id_nueva_reserva} creada exitosamente!', 'success')
             return redirect(url_for('user_dashboard'))
-        except Error as e:
-            conn.rollback()
-            flash(f'Error al crear reserva: {str(e)}', 'danger')
-        finally:
-            cursor.close()
-            conn.close()
+        else:
+            flash(mensaje, 'danger')
     
-    salas = ejecutar_query("SELECT * FROM sala ORDER BY edificio, nombre_sala", fetchall=True)
-    turnos = ejecutar_query("SELECT * FROM turno ORDER BY hora_inicio", fetchall=True)
-    return render_template('user/reservar.html', salas=salas, turnos=turnos, today=date.today().isoformat())
+    salas_list = salas.obtener_salas()
+    turnos_list = reservas.obtener_turnos()
+    return render_template('user/reservar.html', salas=salas_list, turnos=turnos_list, today=date.today().isoformat())
 
 @app.route('/user/cancelar/<int:id_reserva>', methods=['POST'])
 @login_required
@@ -336,12 +255,42 @@ def user_cancelar(id_reserva):
         flash('Reserva no encontrada.', 'danger')
         return redirect(url_for('user_dashboard'))
     
-    resultado = ejecutar_query("UPDATE reserva SET estado = 'cancelada' WHERE id_reserva = %s",
-                               (id_reserva,), commit=True)
-    
-    flash('Reserva cancelada exitosamente.' if resultado else 'Error al cancelar reserva.', 
-          'success' if resultado else 'danger')
+    exito, mensaje = reservas.cancelar_reserva(id_reserva)
+    flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('user_dashboard'))
+
+@app.route('/user/cambiar-password', methods=['GET', 'POST'])
+@login_required
+def user_cambiar_password():
+    """Cambiar contraseña del usuario"""
+    if request.method == 'POST':
+        password_actual = request.form.get('password_actual')
+        password_nueva = request.form.get('password_nueva')
+        password_confirmar = request.form.get('password_confirmar')
+        
+        user = ejecutar_query("SELECT * FROM login WHERE correo = %s", 
+                             (session['user_email'],), fetchone=True)
+        
+        if not user or not bcrypt.checkpw(password_actual.encode('utf-8'), 
+                                          user['contrasena'].encode('utf-8')):
+            flash('Contraseña actual incorrecta', 'danger')
+            return render_template('user/cambiar_password.html')
+        
+        if password_nueva != password_confirmar:
+            flash('Las contraseñas no coinciden', 'danger')
+            return render_template('user/cambiar_password.html')
+        
+        if len(password_nueva) < 6:
+            flash('La contraseña debe tener al menos 6 caracteres', 'danger')
+            return render_template('user/cambiar_password.html')
+        
+        if participantes.actualizar_password(session['user_email'], password_nueva):
+            flash('Contraseña actualizada exitosamente', 'success')
+            return redirect(url_for('user_dashboard'))
+        else:
+            flash('Error al actualizar contraseña', 'danger')
+    
+    return render_template('user/cambiar_password.html')
 
 # ============= PANEL DE ADMINISTRADOR =============
 
@@ -358,7 +307,7 @@ def admin_dashboard():
         """, fetchone=True)['total']
     }
     
-    reservas = ejecutar_query("""
+    reservas_list = ejecutar_query("""
         SELECT r.id_reserva, r.nombre_sala, r.edificio, r.fecha, r.estado,
                CONCAT(t.hora_inicio, ' - ', t.hora_fin) as horario,
                COUNT(rp.ci_participante) as num_participantes
@@ -368,60 +317,347 @@ def admin_dashboard():
         GROUP BY r.id_reserva ORDER BY r.fecha DESC, t.hora_inicio DESC LIMIT 10
     """, fetchall=True)
     
-    return render_template('admin/dashboard.html', stats=stats, reservas=reservas)
+    return render_template('admin/dashboard.html', stats=stats, reservas=reservas_list)
+
+# ========== PARTICIPANTES ==========
 
 @app.route('/admin/participantes')
 @admin_required
 def admin_participantes():
-    participantes = ejecutar_query("""
-        SELECT p.ci, p.nombre, p.apellido, p.email,
-               GROUP_CONCAT(CONCAT(ppa.rol, ' en ', ppa.nombre_programa) SEPARATOR ', ') as programas
-        FROM participante p
-        LEFT JOIN participante_programa_academico ppa ON p.ci = ppa.ci_participante
-        GROUP BY p.ci ORDER BY p.apellido, p.nombre
-    """, fetchall=True)
-    return render_template('admin/participantes.html', participantes=participantes)
+    participantes_list = participantes.obtener_participantes()
+    return render_template('admin/participantes.html', participantes=participantes_list)
+
+@app.route('/admin/participantes/editar/<ci>', methods=['GET', 'POST'])
+@admin_required
+def admin_editar_participante(ci):
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        apellido = request.form.get('apellido')
+        email = request.form.get('email')
+        
+        exito, mensaje = participantes.actualizar_participante(ci, nombre, apellido, email)
+        flash(mensaje, 'success' if exito else 'danger')
+        
+        if exito:
+            return redirect(url_for('admin_participantes'))
+    
+    participante = participantes.obtener_participante(ci)
+    if not participante:
+        flash('Participante no encontrado', 'danger')
+        return redirect(url_for('admin_participantes'))
+    
+    programas = ejecutar_query("SELECT * FROM programa_academico ORDER BY nombre_programa", fetchall=True)
+    return render_template('admin/editar_participante.html', participante=participante, programas=programas)
+
+@app.route('/admin/participantes/eliminar/<ci>', methods=['POST'])
+@admin_required
+def admin_eliminar_participante(ci):
+    exito, mensaje = participantes.eliminar_participante(ci)
+    flash(mensaje, 'success' if exito else 'danger')
+    return redirect(url_for('admin_participantes'))
+
+# ========== SALAS ==========
 
 @app.route('/admin/salas')
 @admin_required
 def admin_salas():
-    salas = ejecutar_query("""
-        SELECT s.nombre_sala, s.edificio, s.capacidad, s.tipo_sala, e.direccion
-        FROM sala s JOIN edificio e ON s.edificio = e.nombre_edificio
-        ORDER BY s.edificio, s.nombre_sala
-    """, fetchall=True)
-    return render_template('admin/salas.html', salas=salas)
+    salas_list = salas.obtener_salas()
+    return render_template('admin/salas.html', salas=salas_list)
+
+@app.route('/admin/salas/crear', methods=['GET', 'POST'])
+@admin_required
+def admin_crear_sala():
+    if request.method == 'POST':
+        nombre_sala = request.form.get('nombre_sala')
+        edificio = request.form.get('edificio')
+        capacidad = int(request.form.get('capacidad'))
+        tipo_sala = request.form.get('tipo_sala')
+        
+        exito, mensaje = salas.crear_sala(nombre_sala, edificio, capacidad, tipo_sala)
+        flash(mensaje, 'success' if exito else 'danger')
+        
+        if exito:
+            return redirect(url_for('admin_salas'))
+    
+    edificios = salas.obtener_edificios()
+    tipos_sala = salas.obtener_tipos_sala()
+    return render_template('admin/crear_sala.html', edificios=edificios, tipos_sala=tipos_sala)
+
+@app.route('/admin/salas/editar/<nombre_sala>/<edificio>', methods=['GET', 'POST'])
+@admin_required
+def admin_editar_sala(nombre_sala, edificio):
+    if request.method == 'POST':
+        nombre_sala_nuevo = request.form.get('nombre_sala')
+        edificio_nuevo = request.form.get('edificio')
+        capacidad = int(request.form.get('capacidad'))
+        tipo_sala = request.form.get('tipo_sala')
+        
+        exito, mensaje = salas.actualizar_sala(nombre_sala, edificio, nombre_sala_nuevo, 
+                                               edificio_nuevo, capacidad, tipo_sala)
+        flash(mensaje, 'success' if exito else 'danger')
+        
+        if exito:
+            return redirect(url_for('admin_salas'))
+    
+    sala = salas.obtener_sala(nombre_sala, edificio)
+    if not sala:
+        flash('Sala no encontrada', 'danger')
+        return redirect(url_for('admin_salas'))
+    
+    edificios = salas.obtener_edificios()
+    tipos_sala = salas.obtener_tipos_sala()
+    stats = salas.obtener_estadisticas_sala(nombre_sala, edificio)
+    
+    return render_template('admin/editar_sala.html', sala=sala, edificios=edificios, 
+                          tipos_sala=tipos_sala, stats=stats)
+
+@app.route('/admin/salas/eliminar/<nombre_sala>/<edificio>', methods=['POST'])
+@admin_required
+def admin_eliminar_sala(nombre_sala, edificio):
+    exito, mensaje = salas.eliminar_sala(nombre_sala, edificio)
+    flash(mensaje, 'success' if exito else 'danger')
+    return redirect(url_for('admin_salas'))
+
+# ========== EDIFICIO ==========
+
+@app.route('/admin/crear_edificio', methods=['GET', 'POST'])
+@admin_required
+def admin_crear_edificio():
+    if request.method == 'POST':
+        nombre = request.form.get('nombre_edificio')
+        direccion = request.form.get('direccion')
+
+        ejecutar_query("""
+            INSERT INTO edificio (nombre_edificio, direccion)
+            VALUES (%s, %s)
+        """, (nombre, direccion), commit=True)
+
+        flash("Edificio creado correctamente", "success")
+        return redirect(url_for('admin_salas'))
+
+    return render_template('admin/crear_edificio.html')
+
+# ========== RESERVAS ==========
 
 @app.route('/admin/reservas')
 @admin_required
 def admin_reservas():
-    reservas = ejecutar_query("""
-        SELECT r.id_reserva, r.nombre_sala, r.edificio, r.fecha,
-               CONCAT(t.hora_inicio, ' - ', t.hora_fin) as horario, r.estado,
-               COUNT(rp.ci_participante) as num_participantes
+    reservas_list = reservas.obtener_reservas()
+    return render_template('admin/reservas.html', reservas=reservas_list)
+
+@app.route('/admin/reservas/editar/<int:id_reserva>', methods=['GET', 'POST'])
+@admin_required
+def admin_editar_reserva(id_reserva):
+    if request.method == 'POST':
+        nombre_sala = request.form.get('nombre_sala')
+        edificio = request.form.get('edificio')
+        fecha_str = request.form.get('fecha')
+        id_turno = int(request.form.get('id_turno'))
+        
+        fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        
+        exito, mensaje = reservas.actualizar_reserva(id_reserva, nombre_sala, edificio, fecha, id_turno)
+        flash(mensaje, 'success' if exito else 'danger')
+        
+        if exito:
+            return redirect(url_for('admin_reservas'))
+    
+    reserva = reservas.obtener_reserva(id_reserva)
+    if not reserva:
+        flash('Reserva no encontrada', 'danger')
+        return redirect(url_for('admin_reservas'))
+    
+    salas_list = salas.obtener_salas()
+    turnos_list = reservas.obtener_turnos()
+    
+    return render_template('admin/editar_reserva.html', reserva=reserva, 
+                          salas=salas_list, turnos=turnos_list)
+
+@app.route('/admin/reservas/<int:id_reserva>/estado', methods=['POST'])
+@admin_required
+def admin_cambiar_estado_reserva(id_reserva):
+    nuevo_estado = request.form.get('estado')
+    exito, mensaje = reservas.cambiar_estado_reserva(id_reserva, nuevo_estado)
+    flash(mensaje, 'success' if exito else 'danger')
+    return redirect(url_for('admin_reservas'))
+
+@app.route('/admin/reservas/eliminar/<int:id_reserva>', methods=['POST'])
+@admin_required
+def admin_eliminar_reserva(id_reserva):
+    exito, mensaje = reservas.eliminar_reserva(id_reserva)
+    flash(mensaje, 'success' if exito else 'danger')
+    return redirect(url_for('admin_reservas'))
+
+@app.route('/admin/reservas/<int:id_reserva>/participantes', methods=['GET', 'POST'])
+@admin_required
+def admin_gestionar_participantes_reserva(id_reserva):
+
+    # --- PROCESAR ACCIONES POST ---
+    if request.method == 'POST':
+        accion = request.form.get("accion")
+        ci = request.form.get("ci_participante")
+
+        # 1) AGREGAR PARTICIPANTE
+        if accion == "agregar":
+            ejecutar_query("""
+                INSERT INTO reserva_participante (ci_participante, id_reserva, fecha_solicitud_reserva)
+                VALUES (%s, %s, NOW())
+            """, (ci, id_reserva), commit=True)
+
+            flash("Participante agregado correctamente", "success")
+            return redirect(url_for('admin_gestionar_participantes_reserva', id_reserva=id_reserva))
+
+        # 2) ELIMINAR PARTICIPANTE
+        if accion == "eliminar":
+            ejecutar_query("""
+                DELETE FROM reserva_participante
+                WHERE ci_participante = %s AND id_reserva = %s
+            """, (ci, id_reserva), commit=True)
+
+            flash("Participante eliminado", "success")
+            return redirect(url_for('admin_gestionar_participantes_reserva', id_reserva=id_reserva))
+
+        # 3) MARCAR ASISTENCIA
+        if accion == "asistencia":
+            asistio = request.form.get("asistio")  # 1 o 0
+            ejecutar_query("""
+                UPDATE reserva_participante
+                SET asistencia = %s
+                WHERE ci_participante = %s AND id_reserva = %s
+            """, (asistio, ci, id_reserva), commit=True)
+
+            flash("Asistencia actualizada", "success")
+            return redirect(url_for('admin_gestionar_participantes_reserva', id_reserva=id_reserva))
+
+    # -------------------------------
+    # --- OBTENER INFORMACIÓN GET ---
+    # -------------------------------
+
+    # Obtener reserva
+    reserva = ejecutar_query("""
+        SELECT 
+            r.id_reserva,
+            r.nombre_sala,
+            r.edificio,
+            r.fecha,
+            CONCAT(t.hora_inicio, ' - ', t.hora_fin) AS horario,
+            s.capacidad
         FROM reserva r
         JOIN turno t ON r.id_turno = t.id_turno
-        LEFT JOIN reserva_participante rp ON r.id_reserva = rp.id_reserva
-        GROUP BY r.id_reserva ORDER BY r.fecha DESC LIMIT 100
-    """, fetchall=True)
-    return render_template('admin/reservas.html', reservas=reservas)
+        JOIN sala s ON r.nombre_sala = s.nombre_sala AND r.edificio = s.edificio
+        WHERE r.id_reserva = %s
+    """, (id_reserva,), fetchone=True)
+
+    if not reserva:
+        flash("Reserva no encontrada", "danger")
+        return redirect(url_for('admin_reservas'))
+
+    # Participantes actuales
+    participantes = ejecutar_query("""
+        SELECT 
+            p.ci AS ci_participante,
+            p.nombre,
+            p.apellido,
+            p.email,
+            rp.asistencia
+        FROM reserva_participante rp
+        JOIN participante p ON rp.ci_participante = p.ci
+        WHERE rp.id_reserva = %s
+    """, (id_reserva,), fetchall=True)
+
+    reserva["participantes"] = participantes
+
+    # Participantes disponibles
+    participantes_disponibles = ejecutar_query("""
+        SELECT ci, nombre, apellido
+        FROM participante
+        WHERE ci NOT IN (
+            SELECT ci_participante
+            FROM reserva_participante
+            WHERE id_reserva = %s
+        )
+    """, (id_reserva,), fetchall=True)
+
+    return render_template(
+        'admin/gestionar_participantes_reserva.html',
+        reserva=reserva,
+        participantes_disponibles=participantes_disponibles
+    )
+
+
+@app.route('/admin/reservas/<int:id_reserva>/marcar_asistencia', methods=['POST'])
+@admin_required
+def admin_marcar_asistencia(id_reserva):
+    ci = request.form.get('ci_participante')
+    asistio = request.form.get('asistio')  # '1' o '0'
+
+    if ci is None or asistio is None:
+        flash("Datos inválidos", "danger")
+        return redirect(url_for('admin_gestionar_participantes_reserva', id_reserva=id_reserva))
+
+    ejecutar_query("""
+        UPDATE reserva_participante
+        SET asistencia = %s
+        WHERE id_reserva = %s AND ci_participante = %s
+    """, (asistio, id_reserva, ci))
+
+    flash("Asistencia actualizada.", "success")
+    return redirect(url_for('admin_gestionar_participantes_reserva', id_reserva=id_reserva))
+
+
+# ========== SANCIONES ==========
 
 @app.route('/admin/sanciones')
 @admin_required
 def admin_sanciones():
-    sanciones = ejecutar_query("""
-        SELECT s.id_sancion, s.ci_participante, p.nombre, p.apellido,
-               s.fecha_inicio, s.fecha_fin,
-               CASE
-                   WHEN CURDATE() BETWEEN s.fecha_inicio AND s.fecha_fin THEN 'ACTIVA'
-                   WHEN CURDATE() > s.fecha_fin THEN 'FINALIZADA'
-                   ELSE 'FUTURA'
-               END as estado
-        FROM sancion_participante s
-        JOIN participante p ON s.ci_participante = p.ci
-        ORDER BY s.fecha_inicio DESC
-    """, fetchall=True)
-    return render_template('admin/sanciones.html', sanciones=sanciones)
+    sanciones_list = sanciones.obtener_sanciones()
+    return render_template('admin/sanciones.html', sanciones=sanciones_list)
+
+@app.route('/admin/sanciones/crear', methods=['GET', 'POST'])
+@admin_required
+def admin_crear_sancion():
+    if request.method == 'POST':
+        ci_participante = request.form.get('ci_participante')
+        fecha_inicio = request.form.get('fecha_inicio')
+        fecha_fin = request.form.get('fecha_fin')
+        
+        exito, mensaje, id_sancion = sanciones.crear_sancion(ci_participante, fecha_inicio, fecha_fin)
+        flash(mensaje, 'success' if exito else 'danger')
+        
+        if exito:
+            return redirect(url_for('admin_sanciones'))
+    
+    participantes_list = participantes.obtener_participantes()
+    return render_template('admin/crear_sancion.html', participantes=participantes_list)
+
+@app.route('/admin/sanciones/editar/<int:id_sancion>', methods=['GET', 'POST'])
+@admin_required
+def admin_editar_sancion(id_sancion):
+    if request.method == 'POST':
+        fecha_inicio = request.form.get('fecha_inicio')
+        fecha_fin = request.form.get('fecha_fin')
+        
+        exito, mensaje = sanciones.actualizar_sancion(id_sancion, fecha_inicio, fecha_fin)
+        flash(mensaje, 'success' if exito else 'danger')
+        
+        if exito:
+            return redirect(url_for('admin_sanciones'))
+    
+    sancion = sanciones.obtener_sancion(id_sancion)
+    if not sancion:
+        flash('Sanción no encontrada', 'danger')
+        return redirect(url_for('admin_sanciones'))
+    
+    return render_template('admin/editar_sancion.html', sancion=sancion)
+
+@app.route('/admin/sanciones/eliminar/<int:id_sancion>', methods=['POST'])
+@admin_required
+def admin_eliminar_sancion(id_sancion):
+    exito, mensaje = sanciones.eliminar_sancion(id_sancion)
+    flash(mensaje, 'success' if exito else 'danger')
+    return redirect(url_for('admin_sanciones'))
+
+# ========== REPORTES ==========
 
 @app.route('/admin/reportes')
 @admin_required
@@ -431,56 +667,37 @@ def admin_reportes():
 @app.route('/admin/reportes/<tipo>')
 @admin_required
 def admin_reporte_data(tipo):
-    """API para obtener datos de reportes - Queries desde archivo SQL"""
-    
-    # Verificar si el tipo de reporte existe
     if tipo not in CONSULTAS_SQL:
         print(f"⚠️ Reporte '{tipo}' no encontrado")
-        print(f"Reportes disponibles: {list(CONSULTAS_SQL.keys())}")
         return jsonify({'error': f'Tipo de reporte no válido: {tipo}'}), 400
     
-    # Ejecutar la consulta correspondiente
     try:
         query = CONSULTAS_SQL[tipo]
-        print(f"\n🔍 Ejecutando reporte: {tipo}")
-        print(f"Query: {query[:100]}...")  # Primeros 100 caracteres
-        
         datos = ejecutar_query(query, fetchall=True)
-        
-        if datos is None:
-            datos = []
-        
-        print(f"✅ Reporte ejecutado: {len(datos)} registros")
         return jsonify(datos if datos else [])
     except Exception as e:
         print(f"❌ Error ejecutando reporte {tipo}: {e}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': f'Error al ejecutar la consulta: {str(e)}'}), 500
-
 
 @app.route('/admin/reportes/disponibles')
 @admin_required
 def admin_reportes_disponibles():
-    """Retorna la lista de reportes disponibles"""
-    reportes = [
-        {'id': 'salas_mas_reservadas', 'nombre': 'Salas Más Reservadas', 'descripcion': 'Top 10 de salas con mayor demanda'},
-        {'id': 'turnos_demandados', 'nombre': 'Turnos Más Demandados', 'descripcion': 'Horarios más solicitados'},
-        {'id': 'promedio_participantes', 'nombre': 'Promedio de Participantes', 'descripcion': 'Ocupación promedio por sala'},
-        {'id': 'reservas_por_carrera', 'nombre': 'Reservas por Carrera', 'descripcion': 'Distribución por programa académico'},
-        {'id': 'ocupacion_edificio', 'nombre': 'Ocupación por Edificio', 'descripcion': 'Eficiencia de uso de espacios (últimos 30 días)'},
-        {'id': 'reservas_por_tipo', 'nombre': 'Reservas por Tipo de Usuario', 'descripcion': 'Comparación docentes vs alumnos'},
-        {'id': 'sanciones_por_tipo', 'nombre': 'Sanciones por Tipo de Usuario', 'descripcion': 'Comportamiento disciplinario por rol'},
-        {'id': 'efectividad', 'nombre': 'Efectividad de Reservas', 'descripcion': 'Porcentaje de utilización vs cancelación'},
-        {'id': 'horas_semana', 'nombre': 'Horas Reservadas por Semana', 'descripcion': 'Tendencias temporales (últimas 8 semanas)'},
-        {'id': 'participantes_sancionados', 'nombre': 'Participantes Más Sancionados', 'descripcion': 'Top 10 usuarios con más sanciones'},
-        {'id': 'edificios_cancelaciones', 'nombre': 'Edificios con Más Cancelaciones', 'descripcion': 'Problemas de infraestructura por ubicación'},
+    reportes_list = [
+        {'id': 'salas_mas_reservadas', 'nombre': 'Salas Más Reservadas'},
+        {'id': 'turnos_demandados', 'nombre': 'Turnos Más Demandados'},
+        {'id': 'promedio_participantes', 'nombre': 'Promedio de Participantes'},
+        {'id': 'reservas_por_carrera', 'nombre': 'Reservas por Carrera'},
+        {'id': 'ocupacion_edificio', 'nombre': 'Ocupación por Edificio'},
+        {'id': 'reservas_por_tipo', 'nombre': 'Reservas por Tipo de Usuario'},
+        {'id': 'sanciones_por_tipo', 'nombre': 'Sanciones por Tipo'},
+        {'id': 'efectividad', 'nombre': 'Efectividad de Reservas'},
+        {'id': 'horas_semana', 'nombre': 'Horas Reservadas por Semana'},
+        {'id': 'participantes_sancionados', 'nombre': 'Participantes Más Sancionados'},
+        {'id': 'edificios_cancelaciones', 'nombre': 'Edificios con Más Cancelaciones'},
     ]
-    return jsonify(reportes)
-
+    return jsonify(reportes_list)
 
 if __name__ == '__main__':
-    # Mostrar consultas cargadas al iniciar
     print("\n🔍 Consultas SQL cargadas:")
     for key in CONSULTAS_SQL.keys():
         print(f"   ✓ {key}")

@@ -73,7 +73,7 @@ INSERT INTO sala (nombre_sala, edificio, capacidad, tipo_sala) VALUES
 ('Sala C1', 'Edificio Sur', 12, 'libre'),
 ('Sala C2', 'Edificio Sur', 6, 'docente');
 
--- Datos de turno (bloques de 1 hora de 8:00 a 23:00)
+-- Datos de turno 
 INSERT INTO turno (hora_inicio, hora_fin) VALUES
 ('08:00:00', '09:00:00'),
 ('09:00:00', '10:00:00'),

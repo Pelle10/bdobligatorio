@@ -159,10 +159,8 @@ FROM reserva
 GROUP BY estado
 ORDER BY total DESC;
 
-
-
 -- =====================================================
--- CONSULTA ADICIONAL 9: Horas Reservadas por Semana
+-- CONSULTA 9: Horas Reservadas por Semana
 -- Propósito: Analizar tendencias temporales de uso del sistema
 -- Utilidad: Identificar picos de demanda para planificación
 -- =====================================================
@@ -182,7 +180,7 @@ GROUP BY semana, anio, num_semana, inicio_semana
 ORDER BY semana DESC;
 
 -- =====================================================
--- CONSULTA ADICIONAL 10: Participantes Más Sancionados
+-- CONSULTA 10: Participantes Más Sancionados
 -- Propósito: Identificar usuarios con comportamiento recurrente problemático
 -- Utilidad: Focalizar esfuerzos de seguimiento y mejora
 -- =====================================================
@@ -206,7 +204,7 @@ ORDER BY total_sanciones DESC, ultima_sancion_fin DESC
 LIMIT 10;
 
 -- =====================================================
--- CONSULTA ADICIONAL 11: Edificios con Más Cancelaciones
+-- CONSULTA 11: Edificios con Más Cancelaciones
 -- Propósito: Detectar problemas de infraestructura o accesibilidad por ubicación
 -- Utilidad: Priorizar inversiones en mejoras de edificios
 -- =====================================================
@@ -229,48 +227,3 @@ LEFT JOIN reserva r ON s.nombre_sala = r.nombre_sala
 GROUP BY e.nombre_edificio, e.direccion
 HAVING total_reservas > 0
 ORDER BY total_canceladas DESC, porcentaje_cancelacion DESC;
-
--- =====================================================
--- CONSULTAS COMPLEMENTARIAS PARA ANÁLISIS AVANZADO
--- =====================================================
-
--- Ranking de facultades por uso del sistema
-SELECT 
-    f.nombre as facultad,
-    COUNT(DISTINCT ppa.ci_participante) as total_estudiantes,
-    COUNT(DISTINCT r.id_reserva) as total_reservas,
-    ROUND(COUNT(DISTINCT r.id_reserva) * 1.0 / 
-          NULLIF(COUNT(DISTINCT ppa.ci_participante), 0), 2) as reservas_por_estudiante
-FROM facultad f
-JOIN programa_academico pa ON f.id_facultad = pa.id_facultad
-LEFT JOIN participante_programa_academico ppa ON pa.nombre_programa = ppa.nombre_programa
-LEFT JOIN reserva_participante rp ON ppa.ci_participante = rp.ci_participante
-LEFT JOIN reserva r ON rp.id_reserva = r.id_reserva
-GROUP BY f.nombre
-ORDER BY total_reservas DESC;
-
--- Análisis de uso por día de la semana
-SELECT 
-    DAYNAME(fecha) as dia_semana,
-    DAYOFWEEK(fecha) as numero_dia,
-    COUNT(*) as total_reservas,
-    ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM reserva), 2) as porcentaje
-FROM reserva
-GROUP BY dia_semana, numero_dia
-ORDER BY numero_dia;
-
--- Salas subutilizadas (candidatas para reasignación)
-SELECT 
-    s.nombre_sala,
-    s.edificio,
-    s.capacidad,
-    s.tipo_sala,
-    COUNT(r.id_reserva) as total_reservas,
-    ROUND(COUNT(r.id_reserva) * 100.0 / 
-          (SELECT COUNT(*) FROM reserva) * 100, 2) as porcentaje_uso
-FROM sala s
-LEFT JOIN reserva r ON s.nombre_sala = r.nombre_sala 
-                    AND s.edificio = r.edificio
-GROUP BY s.nombre_sala, s.edificio, s.capacidad, s.tipo_sala
-HAVING total_reservas < 10
-ORDER BY total_reservas ASC;
