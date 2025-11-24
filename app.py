@@ -356,6 +356,42 @@ def admin_eliminar_participante(ci):
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('admin_participantes'))
 
+@app.route('/admin/participantes/<ci>/eliminar_programa/<programa>', methods=['POST'])
+@admin_required
+def admin_eliminar_programa(ci, programa):
+
+    ejecutar_query("""
+        DELETE FROM participante_programa_academico
+        WHERE ci_participante = %s AND nombre_programa = %s
+    """, (ci, programa), commit=True)
+
+    flash("Programa eliminado correctamente", "success")
+    return redirect(url_for('admin_editar_participante', ci=ci))
+
+@app.route('/admin/participantes/<ci>/agregar_programa', methods=['POST'])
+@admin_required
+def admin_agregar_programa(ci):
+
+    nombre_programa = request.form.get("nombre_programa")
+    rol = request.form.get("rol")
+
+    # Convertir rol para que coincida con MySQL
+    if rol == "estudiante":
+        rol = "alumno"
+
+    if not nombre_programa or not rol:
+        flash("Debe seleccionar programa y rol", "danger")
+        return redirect(url_for('admin_editar_participante', ci=ci))
+
+    ejecutar_query("""
+        INSERT INTO participante_programa_academico (ci_participante, nombre_programa, rol)
+        VALUES (%s, %s, %s)
+    """, (ci, nombre_programa, rol), commit=True)
+
+    flash("Programa agregado correctamente", "success")
+    return redirect(url_for('admin_editar_participante', ci=ci))
+
+
 # ========== SALAS ==========
 
 @app.route('/admin/salas')

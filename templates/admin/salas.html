@@ -41,10 +41,10 @@
                         </td>
                         <td>
                             <span class="badge 
-                                {% if s.tipo_sala == 'auditorio' %}bg-danger
-                                {% elif s.tipo_sala == 'salón' %}bg-primary
-                                {% elif s.tipo_sala == 'laboratorio' %}bg-warning
-                                {% else %}bg-success{% endif %}">
+                                {% if s.tipo_sala == 'docente' %}bg-danger
+                                {% elif s.tipo_sala == 'posgrado' %}bg-warning
+                                {% elif s.tipo_sala == 'libre' %}bg-success
+                                {% else %}bg-secondary{% endif %}">
                                 {{ s.tipo_sala }}
                             </span>
                         </td>
@@ -76,29 +76,6 @@
                 <i class="bi bi-plus-circle"></i> Crear Primera Sala
             </a>
         {% endif %}
-    </div>
-</div>
-
-<!-- Leyenda de tipos de sala -->
-<div class="card mt-3 bg-light">
-    <div class="card-header">
-        <h6 class="mb-0"><i class="bi bi-info-circle"></i> Tipos de Sala</h6>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-3">
-                <span class="badge bg-danger">Auditorio</span> - Solo docentes
-            </div>
-            <div class="col-md-3">
-                <span class="badge bg-primary">Salón</span> - Solo alumnos de grado
-            </div>
-            <div class="col-md-3">
-                <span class="badge bg-warning">Laboratorio</span> - Solo alumnos de posgrado
-            </div>
-            <div class="col-md-3">
-                <span class="badge bg-success">Biblioteca</span> - Todos los usuarios
-            </div>
-        </div>
     </div>
 </div>
 {% endblock %}

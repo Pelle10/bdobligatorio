@@ -80,7 +80,7 @@ def actualizar_sala(nombre_sala_original, edificio_original, nombre_sala_nuevo,
     try:
         cursor = conn.cursor()
         
-        # Verificar que el nuevo edificio existe
+        # Verificar edificio
         cursor.execute("SELECT nombre_edificio FROM edificio WHERE nombre_edificio = %s", (edificio_nuevo,))
         if not cursor.fetchone():
             return False, "El edificio no existe"
@@ -90,9 +90,9 @@ def actualizar_sala(nombre_sala_original, edificio_original, nombre_sala_nuevo,
             UPDATE sala
             SET nombre_sala = %s, edificio = %s, capacidad = %s, tipo_sala = %s
             WHERE nombre_sala = %s AND edificio = %s
-        """, (nombre_sala_nuevo, edificio_nuevo, capacidad, tipo_sala, 
-              nombre_sala_original, edificio_original))
-        
+        """, (nombre_sala_nuevo, edificio_nuevo, capacidad, tipo_sala,
+            nombre_sala_original, edificio_original))
+
         conn.commit()
         
         if cursor.rowcount > 0:
@@ -107,6 +107,8 @@ def actualizar_sala(nombre_sala_original, edificio_original, nombre_sala_nuevo,
     finally:
         cursor.close()
         conn.close()
+
+
 
 
 def eliminar_sala(nombre_sala, edificio):
@@ -188,7 +190,7 @@ def crear_edificio(nombre_edificio, direccion):
 
 def obtener_tipos_sala():
     """Retorna los tipos de sala válidos"""
-    return ['auditorio', 'salón', 'laboratorio', 'biblioteca']
+    return ['libre', 'posgrado', 'docente']
 
 
 def obtener_estadisticas_sala(nombre_sala, edificio):

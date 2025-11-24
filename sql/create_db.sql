@@ -24,13 +24,13 @@ CREATE TABLE programa_academico (
     FOREIGN KEY (id_facultad) REFERENCES facultad(id_facultad) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Tabla participante
+-- ✅ Tabla participante (SOLUCIÓN 1: FK ELIMINADA)
 CREATE TABLE participante (
     ci VARCHAR(20) PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL,
     apellido VARCHAR(50) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    FOREIGN KEY (email) REFERENCES login(correo) ON DELETE CASCADE
+    email VARCHAR(100) NOT NULL UNIQUE
+    -- FK eliminado: ahora el correo es independiente del login
 ) ENGINE=InnoDB;
 
 -- Tabla participante_programa_academico
@@ -105,7 +105,7 @@ CREATE TABLE sancion_participante (
     FOREIGN KEY (ci_participante) REFERENCES participante(ci) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- Índices para mejorar rendimiento de consultas
+-- Índices
 CREATE INDEX idx_reserva_fecha ON reserva(fecha);
 CREATE INDEX idx_reserva_estado ON reserva(estado);
 CREATE INDEX idx_sancion_fechas ON sancion_participante(ci_participante, fecha_inicio, fecha_fin);

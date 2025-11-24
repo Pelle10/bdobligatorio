@@ -91,26 +91,32 @@ def actualizar_participante(ci, nombre, apellido, email):
     
     try:
         cursor = conn.cursor()
-        
-        # Actualizar participante
+
+        # 1) Obtener email actual ANTES de actualizar
+        cursor.execute("SELECT email FROM participante WHERE ci = %s", (ci,))
+        row = cursor.fetchone()
+
+        if not row:
+            return False, "No se encontró el participante"
+
+        email_viejo = row[0]
+
+        # 2) Actualizar login primero (ANTES de cambiar participante)
+        cursor.execute("""
+            UPDATE login
+            SET correo = %s
+            WHERE correo = %s
+        """, (email, email_viejo))
+
+        # 3) Actualizar participante
         cursor.execute("""
             UPDATE participante
             SET nombre = %s, apellido = %s, email = %s
             WHERE ci = %s
         """, (nombre, apellido, email, ci))
-        
-        # Si cambió el email, actualizar login
-        cursor.execute("""
-            UPDATE login
-            SET correo = %s
-            WHERE correo = (SELECT email FROM participante WHERE ci = %s)
-        """, (email, ci))
-        
+
         conn.commit()
-        
-        if cursor.rowcount > 0:
-            return True, "Participante actualizado exitosamente"
-        return False, "No se encontró el participante"
+        return True, "Participante actualizado exitosamente"
         
     except Error as e:
         conn.rollback()
