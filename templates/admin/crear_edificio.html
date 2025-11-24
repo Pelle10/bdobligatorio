@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Crear Edificio - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-white mb-4">
+        <i class="bi bi-building-add"></i> Crear Nuevo Edificio
+    </h1>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Datos del Edificio</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Edificio *</label>
+                            <input type="text" class="form-control" name="nombre_edificio" 
+                                   placeholder="Ej: Edificio Central" required>
+                            <small class="text-muted">Este nombre será único en el sistema</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Dirección *</label>
+                            <input type="text" class="form-control" name="direccion" 
+                                   placeholder="Ej: Av. 18 de Julio 1234" required>
+                            <small class="text-muted">Dirección física del edificio</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            Después de crear el edificio, podrás agregar salas en él desde el menú de Salas.
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-plus-circle"></i> Crear Edificio
+                            </button>
+                            <a href="{{ url_for('admin_crear_sala') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver a Crear Sala
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

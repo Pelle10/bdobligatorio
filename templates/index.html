@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio - Sistema de Reservas{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-10">
+        <div class="text-center text-white mb-5">
+            <h1 class="display-3 fw-bold mb-3">
+                <i class="bi bi-building"></i> Sistema de Reservas de Salas
+            </h1>
+            <p class="lead">Gestiona las reservas de salas de estudio de manera fácil y eficiente</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Card Usuario -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body text-center p-5">
+                        <div class="mb-4">
+                            <i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>
+                        </div>
+                        <h3 class="card-title mb-3">Para Estudiantes</h3>
+                        <p class="card-text text-muted mb-4">
+                            Reserva salas de estudio, consulta tus reservas activas y gestiona tu calendario académico.
+                        </p>
+                        <ul class="list-unstyled text-start mb-4">
+                            <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Ver salas disponibles</li>
+                            <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Hacer reservas</li>
+                            <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Consultar historial</li>
+                            <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Cancelar reservas</li>
+                        </ul>
+                        {% if not session.user_email %}
+                            <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg w-100 mb-2">
+                                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                            </a>
+                            <a href="{{ url_for('register') }}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-person-plus"></i> Registrarse
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('user_dashboard') }}" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-house-door"></i> Ir a Mi Panel
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Administrador -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body text-center p-5">
+                        <div class="mb-4">
+                            <i class="bi bi-shield-check text-danger" style="font-size: 5rem;"></i>
+                        </div>
+                        <h3 class="card-title mb-3">Para Administradores</h3>
+                        <p class="card-text text-muted mb-4">
+                            Gestiona participantes, salas, reservas y accede a reportes detallados del sistema.
+                        </p>
+                        <ul class="list-unstyled text-start mb-4">
+                            <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Gestionar participantes</li>
+                            <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Administrar salas</li>
+                            <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Controlar reservas</li>
+                            <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Ver reportes</li>
+                        </ul>
+                        {% if not session.user_email %}
+                            <a href="{{ url_for('login') }}" class="btn btn-danger btn-lg w-100">
+                                <i class="bi bi-shield-lock"></i> Acceso Admin
+                            </a>
+                        {% elif session.is_admin %}
+                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-danger btn-lg w-100">
+                                <i class="bi bi-speedometer2"></i> Panel Admin
+                            </a>
+                        {% else %}
+                            <button class="btn btn-secondary btn-lg w-100" disabled>
+                                <i class="bi bi-shield-x"></i> Sin Permisos Admin
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="row g-4 mt-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-clock-history text-info" style="font-size: 3rem;"></i>
+                        <h5 class="card-title mt-3">Reservas 24/7</h5>
+                        <p class="card-text text-muted">Realiza reservas en cualquier momento del día</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-calendar-check text-success" style="font-size: 3rem;"></i>
+                        <h5 class="card-title mt-3">Gestión Simple</h5>
+                        <p class="card-text text-muted">Interfaz intuitiva y fácil de usar</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-graph-up text-warning" style="font-size: 3rem;"></i>
+                        <h5 class="card-title mt-3">Reportes Detallados</h5>
+                        <p class="card-text text-muted">Estadísticas y análisis en tiempo real</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

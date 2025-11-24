@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Gestionar Participantes - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-white mb-4">
+        <i class="bi bi-people"></i> Gestionar Participantes - Reserva #{{ reserva.id_reserva }}
+    </h1>
+
+    <div class="row">
+        <!-- Participantes Actuales -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Participantes en la Reserva</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Sala:</strong> {{ reserva.nombre_sala }} ({{ reserva.edificio }})<br>
+                        <strong>Capacidad:</strong> {{ reserva.capacidad }} personas<br>
+                        <strong>Actuales:</strong> {{ reserva.participantes|length }} / {{ reserva.capacidad }}
+                    </div>
+
+                    {% if reserva.participantes %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>CI</th>
+                                        <th>Nombre</th>
+                                        <th>Asistencia</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for part in reserva.participantes %}
+                                    <tr>
+                                        <td>{{ part.ci_participante }}</td>
+                                        <td>{{ part.nombre }} {{ part.apellido }}</td>
+                                        <td>
+                                            {% if part.asistencia == 1 %}
+                                                <span class="badge bg-success">✓</span>
+                                            {% elif part.asistencia == 0 %}
+                                                <span class="badge bg-danger">✗</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <!-- Marcar Asistencia -->
+                                                <form method="POST" class="d-inline">
+                                                    <input type="hidden" name="accion" value="asistencia">
+                                                    <input type="hidden" name="ci_participante" value="{{ part.ci_participante }}">
+
+                                                    <button type="submit" name="asistio" value="1"
+                                                            class="btn btn-success btn-sm" title="Marcar presente">
+                                                        <i class="bi bi-check"></i>
+                                                    </button>
+
+                                                    <button type="submit" name="asistio" value="0"
+                                                            class="btn btn-danger btn-sm" title="Marcar ausente">
+                                                        <i class="bi bi-x"></i>
+                                                    </button>
+                                                </form>
+
+                                                <!-- Eliminar -->
+                                                <form method="POST" class="d-inline">
+                                                    <input type="hidden" name="accion" value="eliminar">
+                                                    <input type="hidden" name="ci_participante" value="{{ part.ci_participante }}">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                            onclick="return confirm('¿Eliminar participante?')"
+                                                            title="Eliminar">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No hay participantes en esta reserva</p>
+                    {% endif %}
+
+                    <a href="{{ url_for('admin_editar_reserva', id_reserva=reserva.id_reserva) }}" 
+                       class="btn btn-secondary mt-3">
+                        <i class="bi bi-arrow-left"></i> Volver a Reserva
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agregar Participantes -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Agregar Participante</h5>
+                </div>
+                <div class="card-body">
+                    {% if reserva.participantes|length >= reserva.capacidad %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            La sala ha alcanzado su capacidad máxima
+                        </div>
+                    {% else %}
+                        <form method="POST">
+                            <input type="hidden" name="accion" value="agregar">
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Seleccionar Participante</label>
+                                <select class="form-select" name="ci_participante" required>
+                                    <option value="">Seleccionar...</option>
+                                    {% for part in participantes_disponibles %}
+                                    <option value="{{ part.ci }}">
+                                        {{ part.nombre }} {{ part.apellido }} (CI: {{ part.ci }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-plus-circle"></i> Agregar Participante
+                            </button>
+                        </form>
+
+                        <hr>
+
+                        <div class="alert alert-info">
+                            <small>
+                                <strong>Disponibles:</strong> {{ participantes_disponibles|length }}<br>
+                                <strong>Lugares restantes:</strong> {{ reserva.capacidad - reserva.participantes|length }}
+                            </small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Leyenda Asistencia -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Leyenda de Asistencia</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li><span class="badge bg-success">✓</span> Asistió</li>
+                        <li><span class="badge bg-danger">✗</span> No asistió</li>
+                        <li><span class="badge bg-secondary">-</span> Sin registrar</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

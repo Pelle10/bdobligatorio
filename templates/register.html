@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Registrarse{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-plus text-success" style="font-size: 4rem;"></i>
+                    <h2 class="mt-3">Crear Cuenta</h2>
+                    <p class="text-muted">Completa el formulario para registrarte</p>
+                </div>
+
+                <form method="POST" action="{{ url_for('register') }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ci" class="form-label">
+                                <i class="bi bi-card-text"></i> Cédula de Identidad *
+                            </label>
+                            <input type="text" class="form-control" id="ci" name="ci" required 
+                                   placeholder="Ej: 12345678">
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">
+                                <i class="bi bi-envelope"></i> Email *
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" required
+                                   placeholder="ejemplo@uni.edu">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre" class="form-label">
+                                <i class="bi bi-person"></i> Nombre *
+                            </label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="apellido" class="form-label">
+                                <i class="bi bi-person"></i> Apellido *
+                            </label>
+                            <input type="text" class="form-control" id="apellido" name="apellido" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">
+                                <i class="bi bi-lock"></i> Contraseña *
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password" required
+                                   minlength="6" placeholder="Mínimo 6 caracteres">
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="confirm_password" class="form-label">
+                                <i class="bi bi-lock-fill"></i> Confirmar Contraseña *
+                            </label>
+                            <input type="password" class="form-control" id="confirm_password" 
+                                   name="confirm_password" required minlength="6">
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h5 class="mb-3"><i class="bi bi-mortarboard"></i> Información Académica</h5>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="programa" class="form-label">
+                                <i class="bi bi-book"></i> Programa Académico *
+                            </label>
+                            <select class="form-select" id="programa" name="programa" required>
+                                <option value="">-- Selecciona un programa --</option>
+                                {% for programa in programas %}
+                                <option value="{{ programa.nombre_programa }}">
+                                    {{ programa.nombre_programa }} ({{ programa.tipo }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="rol" class="form-label">
+                                <i class="bi bi-person-badge"></i> Rol *
+                            </label>
+                            <select class="form-select" id="rol" name="rol" required>
+                                <option value="">-- Selecciona tu rol --</option>
+                                <option value="alumno">Alumno</option>
+                                <option value="docente">Docente</option>
+                            </select>
+                            <div class="form-text">
+                                Los docentes tienen acceso al panel de administración
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> Tipos de Salas:</h6>
+                        <ul class="mb-0 small">
+                            <li><strong>Salas Libres:</strong> Todos los usuarios pueden reservar</li>
+                            <li><strong>Salas de Posgrado:</strong> Solo estudiantes de posgrado y docentes</li>
+                            <li><strong>Salas de Docentes:</strong> Solo docentes</li>
+                        </ul>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg w-100 mb-3">
+                        <i class="bi bi-check-circle"></i> Registrarse
+                    </button>
+                </form>
+
+                <hr>
+
+                <div class="text-center">
+                    <p class="mb-0">¿Ya tienes una cuenta?</p>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary mt-2">
+                        <i class="bi bi-box-arrow-in-right"></i> Inicia Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
