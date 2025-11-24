@@ -1,315 +1,413 @@
 # Sistema de Gestión de Reservas de Salas de Estudio
 
-Sistema completo para la gestión de reservas de salas de estudio en una universidad, desarrollado en Python + MySQL sin uso de ORM, con interfaz web Flask y aplicación de consola.
+Sistema completo de gestión de reservas de salas universitarias desarrollado en Python + Flask + MySQL, con ABM completo, reportes BI y arquitectura modular sin uso de ORM.
 
-## 📋 Características
+## 🌟 Características Principales
 
 ### 🌐 **Aplicación Web (Flask)**
-- **Registro e Inicio de Sesión**: Sistema completo de autenticación con bcrypt
-- **Panel de Usuario (Estudiantes)**:
-  - Ver salas disponibles con capacidad y tipo
-  - Crear reservas con validación automática de reglas
-  - Ver historial de reservas
+
+#### **Panel de Usuario (Estudiantes/Docentes)**
+- ✅ **Registro e Inicio de Sesión**: Autenticación segura con bcrypt
+- ✅ **Gestión de Reservas**:
+  - Crear reservas con validación automática de reglas de negocio
+  - Ver historial completo de reservas
   - Cancelar reservas activas
-  - Alertas de sanciones activas
-- **Panel de Administrador (Docentes)**:
-  - Dashboard con estadísticas en tiempo real
-  - Gestión completa de participantes
-  - Administración de salas
-  - Control de todas las reservas
-  - Gestión de sanciones
-  - Reportes con gráficos interactivos (Chart.js)
-- **Seguridad**:
-  - Contraseñas hasheadas con bcrypt
-  - Separación de roles (Usuario/Administrador)
-  - Protección de rutas con decoradores
-  - Prevención de SQL injection con queries parametrizadas
+  - Sistema de alertas para sanciones
+- ✅ **Exploración de Salas**:
+  - Visualización de salas por edificio
+  - Información de capacidad y tipo
+  - Disponibilidad en tiempo real
+- ✅ **Gestión de Perfil**:
+  - Cambiar contraseña con validación de seguridad
+  - Ver programas académicos asociados
 
-### 🖥️ **Aplicación de Consola (Python)**
-- Menú interactivo para gestión completa
-- Módulos ABM (Alta, Baja, Modificación)
-- Sistema de reportes SQL
+#### **Panel de Administrador (Docentes)**
+- ✅ **Dashboard Ejecutivo**:
+  - Estadísticas en tiempo real
+  - Gráficos de uso del sistema
+  - Métricas de rendimiento
+  
+- ✅ **ABM Completo de Participantes**:
+  - Alta: Registro con hash bcrypt
+  - Baja: Eliminación con validación de dependencias
+  - Modificación: Actualización de datos personales
+  - Gestión de programas académicos por participante
+  
+- ✅ **ABM Completo de Salas**:
+  - Alta: Creación de salas con tipos específicos
+  - Baja: Eliminación validando reservas activas
+  - Modificación: Edición de capacidad y tipo
+  - Gestión de edificios
+  - Estadísticas de uso por sala
+  
+- ✅ **ABM Completo de Reservas**:
+  - Alta: Creación manual de reservas
+  - Baja: Eliminación de reservas canceladas
+  - Modificación: Cambio de fecha, horario y sala
+  - Gestión de participantes en reservas
+  - Registro de asistencia individual
+  - Cambio de estado (activa/cancelada/finalizada)
+  
+- ✅ **ABM Completo de Sanciones**:
+  - Alta: Creación con duraciones predefinidas (7, 15, 30, 60 días)
+  - Baja: Eliminación manual
+  - Modificación: Ajuste de fechas
+  - Finalización anticipada
+  - Estadísticas de sanciones
+  
+- ✅ **Sistema de Reportes BI**:
+  - 11 reportes con visualizaciones (Chart.js)
+  - Gráficos interactivos (barras, líneas, tortas)
+  - Exportación de datos
+  - Consultas SQL dinámicas desde archivo
 
-### 🎓 **Sistema de Roles**
-- **Alumno de Grado**: Acceso a salas libres, límites de 2h/día y 3 reservas/semana
-- **Alumno de Posgrado**: Acceso a salas libres y de posgrado, sin límites en salas exclusivas
-- **Docente**: Acceso completo (admin), puede usar todas las salas sin restricciones
+### 🖥️ **Aplicación de Consola (Python CLI)**
+- Menú interactivo completo
+- Todas las operaciones ABM disponibles
+- Sistema de reportes integrado
 
-## 🔧 Requisitos
+### 🎓 **Sistema de Roles y Permisos**
 
-### Localmente
-- Python 3.8 o superior
-- MySQL 8.0 o superior
-- pip (gestor de paquetes de Python)
+| Rol | Acceso Salas | Límites | Privilegios Admin |
+|-----|--------------|---------|-------------------|
+| **Alumno Grado** | Libre, Salón | 2h/día, 3 reservas/semana | ❌ |
+| **Alumno Posgrado** | Libre, Salón, Laboratorio | Sin límites en exclusivas | ❌ |
+| **Docente** | Todas (incluyendo Auditorios) | Sin límites | ✅ Panel Admin |
 
-### Con Docker
-- Docker
-- Docker Compose
+## 🏗️ Arquitectura del Sistema
 
-## 🚀 Instalación y Ejecución
-
-### Opción 1: Ejecución con Docker (Recomendada)
-
-#### 1. **Clonar o descargar el proyecto**
-
-#### 2. **Iniciar con Docker**
-
-```bash
-# Construir e iniciar servicios
-docker-compose up -d --build
-
-# Ver logs
-docker-compose logs -f
-
-# Esperar a ver: "MySQL está listo!" y "Running on http://0.0.0.0:5000"
-```
-
-#### 3. **Acceder a la aplicación**
-
-- **Aplicación Web**: http://localhost:5000
-- **Aplicación Consola**: 
-  ```bash
-  docker exec -it reservas_app python main.py
-  ```
-
-#### 4. **Detener servicios**
-
-```bash
-docker-compose down
-```
-
-### Opción 2: Ejecución Local (Sin Docker)
-
-#### 1. **Instalar MySQL** (si no lo tiene)
-Descargar desde: https://dev.mysql.com/downloads/mysql/
-
-#### 2. **Crear la base de datos**
-
-```bash
-mysql -u root -p < sql/create_db.sql
-mysql -u root -p reservas_salas < sql/insert_data.sql
-```
-
-#### 3. **Configurar conexión**
-
-Editar `db/connection.py` si es necesario:
-
-```python
-DB_CONFIG = {
-    'host': 'localhost',
-    'port': 3306,
-    'user': 'root',
-    'password': 'tu_password',  # Cambiar
-    'database': 'reservas_salas',
-    'charset': 'utf8mb4'
-}
-```
-
-#### 4. **Instalar dependencias**
-
-```bash
-pip install -r requirements.txt
-```
-
-#### 5. **Ejecutar la aplicación**
-
-```bash
-# Aplicación Web
-python app.py
-# Acceder en: http://localhost:5000
-
-# O Aplicación de Consola
-python main.py
-```
-
-## 📊 Estructura del Proyecto (Versión Modular)
+### Estructura Modular
 
 ```
 reservas_salas/
 │
-├── db/
-│   ├── __init__.py              # Inicialización paquete db
-│   └── connection.py            # Conexión y operaciones MySQL
+├── app.py                        # Aplicación Flask principal (ABM + Reportes)
+├── main.py                       # Aplicación CLI (consola)
 │
-├── modules/
-│   ├── __init__.py              # Inicialización paquete modules
-│   ├── participantes.py         # Gestión de participantes
-│   ├── salas.py                 # Gestión de salas
-│   ├── reservas.py              # Gestión de reservas
-│   ├── sanciones.py             # Gestión de sanciones
-│   ├── validations.py           # Validaciones de reglas de negocio
-│   └── reportes.py              # Reportes y consultas SQL
+├── db/
+│   ├── __init__.py
+│   └── connection.py             # Pool de conexiones MySQL
+│
+├── modules/                      # Módulos de negocio
+│   ├── __init__.py
+│   ├── participantes.py          # ABM Participantes
+│   ├── salas.py                  # ABM Salas
+│   ├── reservas.py               # ABM Reservas
+│   ├── sanciones.py              # ABM Sanciones
+│   ├── validations.py            # Reglas de negocio
+│   └── reportes.py               # Consultas BI
+│
+├── templates/                    # Vistas HTML
+│   ├── base.html                 # Template base
+│   ├── index.html                # Landing page
+│   ├── login.html                # Inicio de sesión
+│   ├── register.html             # Registro
+│   │
+│   ├── user/                     # Vistas de usuario
+│   │   ├── dashboard.html
+│   │   ├── salas.html
+│   │   ├── reservar.html
+│   │   └── cambiar_password.html
+│   │
+│   └── admin/                    # Vistas de administrador
+│       ├── dashboard.html
+│       ├── participantes.html
+│       ├── editar_participante.html
+│       ├── salas.html
+│       ├── crear_sala.html
+│       ├── editar_sala.html
+│       ├── crear_edificio.html
+│       ├── reservas.html
+│       ├── editar_reserva.html
+│       ├── gestionar_participantes_reserva.html
+│       ├── sanciones.html
+│       ├── crear_sancion.html
+│       ├── editar_sancion.html
+│       └── reportes.html
 │
 ├── sql/
-│   ├── create_db.sql            # Script de creación de base de datos
-│   └── insert_data.sql          # Datos de ejemplo
+│   ├── create_db.sql             # DDL completo
+│   ├── insert_data.sql           # Datos de ejemplo
+│   └── consultas_reportes.sql    # Queries BI
 │
-├── main.py                       # Aplicación principal (punto de entrada)
 ├── requirements.txt              # Dependencias Python
 ├── Dockerfile                    # Imagen Docker
-├── docker-compose.yml            # Orquestación Docker
-├── .dockerignore                 # Archivos a ignorar en Docker
-├── .gitignore                    # Archivos a ignorar en Git
-└── README.md                     # Documentación completa
+├── docker-compose.yml            # Orquestación
+└── README.md                     # Este archivo
 ```
 
-### Ventajas de la Estructura Modular
+## 🔧 Tecnologías Utilizadas
 
-- ✅ **Separación de responsabilidades**: Cada módulo tiene una función específica
-- ✅ **Mantenibilidad**: Fácil localizar y modificar funcionalidades
-- ✅ **Reutilización**: Funciones compartidas entre módulos
-- ✅ **Escalabilidad**: Agregar nuevos módulos sin afectar existentes
-- ✅ **Testeable**: Cada módulo puede probarse independientemente
+| Componente | Tecnología | Versión |
+|------------|------------|---------|
+| Backend | Python | 3.11+ |
+| Framework Web | Flask | 3.0+ |
+| Base de Datos | MySQL | 8.0+ |
+| Conector DB | mysql-connector-python | 8.3+ |
+| Seguridad | bcrypt | 4.1+ |
+| Frontend | Bootstrap | 5.3 |
+| Gráficos | Chart.js | 4.4 |
+| Iconos | Bootstrap Icons | 1.11 |
+| Contenedores | Docker + Docker Compose | 24.0+ |
 
-## 🗃️ Esquema de Base de Datos
+## 🚀 Instalación
 
-### Tablas Principales
-- **login**: Credenciales de acceso
-- **participante**: Datos de usuarios
-- **programa_academico**: Carreras y programas
-- **participante_programa_academico**: Relación participante-programa
-- **facultad**: Facultades de la universidad
-- **sala**: Salas disponibles para reserva
-- **edificio**: Edificios de la universidad
-- **turno**: Bloques horarios (8:00-23:00)
-- **reserva**: Reservas realizadas
-- **reserva_participante**: Participantes en cada reserva
-- **sancion_participante**: Sanciones aplicadas
+### Opción 1: Docker (Recomendada) 🐳
 
-## 📖 Reglas de Negocio
+```bash
+# 1. Clonar repositorio
+git clone <url-repositorio>
+cd reservas_salas
 
-1. ✅ Las salas se reservan por bloques de 1 hora (8:00 - 23:00)
-2. ✅ Máximo 2 horas por día por participante (salvo privilegiados)
-3. ✅ Máximo 3 reservas activas por semana (salvo privilegiados)
-4. ✅ Docentes y estudiantes de posgrado pueden usar salas exclusivas
-5. ✅ No se puede exceder la capacidad de la sala
-6. ✅ Si nadie asiste, todos los participantes son sancionados 2 meses
-7. ✅ Validación en todas las capas (BD, backend)
+# 2. Iniciar servicios
+docker-compose up -d --build
 
-## 📊 Reportes Disponibles
+# 3. Verificar logs
+docker-compose logs -f
 
-1. **Salas más reservadas**: Top 10 salas con más demanda
-2. **Turnos más demandados**: Horarios más solicitados
-3. **Promedio de participantes**: Por cada sala
-4. **Reservas por carrera**: Agrupado por facultad y programa
-5. **Ocupación por edificio**: Porcentaje últimos 30 días
-6. **Reservas por tipo de usuario**: Docentes, grado, posgrado
-7. **Sanciones por tipo de usuario**: Análisis de comportamiento
-8. **Efectividad de reservas**: Activas vs canceladas vs sin asistencia
-9. **Horas por semana**: Total de horas reservadas últimas 8 semanas
-10. **Participantes más sancionados**: Top 10 usuarios
-11. **Edificios con más cancelaciones**: Análisis por ubicación
+# 4. Acceder
+# Web: http://localhost:5000
+# CLI: docker exec -it reservas_app python main.py
 
-## 🎯 Módulos Funcionales
+# 5. Detener
+docker-compose down
+```
 
-### 1. Gestión de Participantes
-- Listar todos los participantes con sus programas
-- Crear nuevos participantes (con hash de contraseña bcrypt)
-- Modificar datos de participantes
-- Eliminar participantes
+### Opción 2: Instalación Local 💻
 
-### 2. Gestión de Salas
-- Listar salas con capacidad y tipo
-- Crear nuevas salas
-- Modificar capacidad y tipo de sala
-- Eliminar salas
+#### Requisitos
+- Python 3.11+
+- MySQL 8.0+
+- pip
 
-### 3. Gestión de Reservas
-- Listar reservas con estado y participantes
-- Crear reservas (con validación completa)
-- Cancelar reservas
-- Registrar asistencia (con aplicación automática de sanciones)
+#### Pasos
 
-### 4. Gestión de Sanciones
-- Listar sanciones activas y pasadas
-- Crear sanciones manuales
-- Eliminar sanciones
+```bash
+# 1. Crear base de datos
+mysql -u root -p < sql/create_db.sql
+mysql -u root -p reserva_salas < sql/insert_data.sql
 
-### 5. Reportes
-- 11 reportes SQL para análisis de datos
+# 2. Configurar conexión (db/connection.py)
+DB_CONFIG = {
+    'host': 'localhost',
+    'user': 'root',
+    'password': 'tu_password',
+    'database': 'reserva_salas'
+}
+
+# 3. Instalar dependencias
+pip install -r requirements.txt
+
+# 4. Ejecutar aplicación
+python app.py
+# o
+python main.py
+```
+
+## 📊 Modelo de Datos
+
+### Entidades Principales
+
+```
+PARTICIPANTE (usuario del sistema)
+    └── N:M PROGRAMA_ACADEMICO (con rol)
+            └── N:1 FACULTAD
+
+RESERVA (bloque de tiempo reservado)
+    ├── N:1 SALA
+    │   └── N:1 EDIFICIO
+    ├── N:1 TURNO (bloque horario)
+    └── N:M PARTICIPANTE (asistencia)
+
+SANCION (restricción temporal)
+    └── N:1 PARTICIPANTE
+```
+
+### Tipos de Salas
+
+| Tipo | Usuarios Permitidos | Uso |
+|------|---------------------|-----|
+| **Libre** | Todos | Estudio general |
+| **Salón** | Alumnos de Grado | Clases |
+| **Laboratorio** | Alumnos de Posgrado | Investigación |
+| **Auditorio** | Docentes | Eventos |
+
+## 📋 Reglas de Negocio
+
+### Restricciones Generales
+1. ✅ Bloques horarios de 1 hora (8:00 - 23:00)
+2. ✅ No exceder capacidad de sala
+3. ✅ No solapar reservas en misma sala/turno
+4. ✅ Validación de compatibilidad sala-usuario
+
+### Restricciones por Rol
+
+#### Alumnos de Grado
+- Máximo **2 horas/día**
+- Máximo **3 reservas activas/semana**
+- Solo salas **libres** y **salones**
+
+#### Alumnos de Posgrado
+- Sin límites en salas exclusivas
+- Acceso a **laboratorios**
+
+#### Docentes
+- Sin restricciones
+- Acceso a **auditorios**
+- Panel administrativo completo
+
+### Sistema de Sanciones
+- ⚠️ **Inasistencia total**: 2 meses de sanción automática
+- 🚫 **Durante sanción**: No se pueden crear reservas
+- ✅ **Reservas existentes**: No se cancelan automáticamente
+
+## 📈 Reportes Disponibles
+
+| # | Reporte | Descripción | Visualización |
+|---|---------|-------------|---------------|
+| 1 | Salas Más Reservadas | Top 10 con más demanda | Gráfico de barras |
+| 2 | Turnos Demandados | Horarios más solicitados | Gráfico de líneas |
+| 3 | Promedio Participantes | Por sala | Gráfico de barras |
+| 4 | Reservas por Carrera | Agrupado por facultad | Tabla |
+| 5 | Ocupación por Edificio | % últimos 30 días | Gráfico de barras |
+| 6 | Reservas por Tipo Usuario | Docentes vs alumnos | Tabla |
+| 7 | Sanciones por Tipo | Análisis disciplinario | Gráfico circular |
+| 8 | Efectividad de Reservas | Activas vs canceladas | Gráfico circular |
+| 9 | Horas por Semana | Últimas 8 semanas | Gráfico de líneas |
+| 10 | Participantes Sancionados | Top 10 | Tabla |
+| 11 | Edificios con Cancelaciones | Por ubicación | Tabla |
 
 ## 🔐 Seguridad
 
-- Contraseñas hasheadas con **bcrypt**
-- Validaciones en múltiples capas
-- Uso de parámetros preparados para prevenir SQL injection
-- Transacciones para operaciones críticas
+### Implementaciones
+- ✅ **Hashing**: bcrypt con salt automático
+- ✅ **SQL Injection**: Queries parametrizadas
+- ✅ **Autenticación**: Sistema de sesiones Flask
+- ✅ **Autorización**: Decoradores `@login_required` y `@admin_required`
+- ✅ **Validación**: Múltiples capas (BD, backend, frontend)
+- ✅ **Transacciones**: Operaciones atómicas con rollback
 
-## 💡 Datos de Ejemplo
+### Ejemplo de Hash
+```python
+# Al crear usuario
+hash_pass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
-El sistema incluye datos de ejemplo:
-- 8 participantes (4 alumnos, 2 docentes, 2 posgrado)
-- 4 facultades
-- 7 programas académicos
-- 3 edificios
-- 9 salas (libres, posgrado, docentes)
-- 15 turnos (8:00 a 23:00)
-- 6 reservas iniciales
-
-## 🛠️ Tecnologías Utilizadas
-
-- **Python 3.11**: Lenguaje de programación
-- **MySQL 8.0**: Base de datos relacional
-- **mysql-connector-python**: Conector MySQL para Python
-- **bcrypt**: Hashing de contraseñas
-- **Docker**: Contenedorización (opcional)
-
-## 📝 Notas Importantes
-
-- El sistema **NO** usa ORM, todas las consultas son SQL nativo
-- Las validaciones están implementadas en todas las capas
-- Se incluye manejo de errores y mensajes claros
-- El código está comentado y es fácil de leer
-- Funciones reutilizables para operaciones comunes
-
-## ⚙️ Configuración Avanzada
-
-### Cambiar puerto de MySQL en Docker
-Editar `docker-compose.yml`:
-```yaml
-ports:
-  - "3307:3306"  # Puerto externo:interno
+# Al verificar login
+bcrypt.checkpw(password.encode('utf-8'), hash_almacenado)
 ```
 
-### Agregar más turnos
-```sql
-INSERT INTO turno (hora_inicio, hora_fin) VALUES ('23:00:00', '24:00:00');
-```
+## 💾 Datos de Ejemplo
 
-### Crear nuevos edificios
-```sql
-INSERT INTO edificio (nombre_edificio, direccion, departamento) 
-VALUES ('Edificio Oeste', 'Calle Oeste 123', 'Montevideo');
-```
+El sistema incluye:
+- 👥 **8 participantes** (roles variados)
+- 🏫 **4 facultades**
+- 📚 **7 programas académicos**
+- 🏢 **3 edificios**
+- 🚪 **9 salas** (tipos variados)
+- ⏰ **15 turnos** (8:00-23:00)
+- 📅 **6 reservas iniciales**
+
+### Usuarios de Prueba
+
+| Email | Contraseña | Rol | Acceso |
+|-------|------------|-----|--------|
+| `juan.perez@universidad.edu` | `password123` | Alumno Grado | Usuario |
+| `maria.garcia@universidad.edu` | `password123` | Docente | Administrador |
+| `carlos.rodriguez@universidad.edu` | `password123` | Alumno Posgrado | Usuario |
+
+## 🎯 Casos de Uso Principales
+
+### Para Usuarios
+1. **Reservar Sala**:
+   - Login → Reservar → Seleccionar sala/fecha/turno → Confirmar
+   - Validaciones automáticas aplicadas
+   
+2. **Cancelar Reserva**:
+   - Dashboard → Mis Reservas → Cancelar
+   - Solo reservas activas
+
+3. **Ver Historial**:
+   - Dashboard → Tabla de reservas con estados
+
+### Para Administradores
+1. **Gestionar Participantes**:
+   - Admin → Participantes → Crear/Editar/Eliminar
+   - Asignar programas y roles
+   
+2. **Gestionar Reservas**:
+   - Admin → Reservas → Ver detalles
+   - Cambiar estado, agregar/quitar participantes
+   - Registrar asistencia
+
+3. **Aplicar Sanciones**:
+   - Admin → Sanciones → Crear
+   - Seleccionar duración predefinida o custom
+   - Finalizar anticipadamente si corresponde
+
+4. **Ver Reportes**:
+   - Admin → Reportes → Seleccionar tipo
+   - Visualización gráfica interactiva
 
 ## 🐛 Solución de Problemas
 
-### Error de conexión a MySQL
-- Verificar que MySQL esté ejecutándose
-- Verificar usuario y contraseña en `DB_CONFIG`
-- Verificar que la base de datos existe
+### Error: "Conexión rechazada MySQL"
+```bash
+# Verificar estado
+docker-compose ps
+# o
+systemctl status mysql
 
-### Error de permisos
-- Asegurar que el usuario MySQL tenga permisos
-- Ejecutar: `GRANT ALL PRIVILEGES ON reservas_salas.* TO 'root'@'localhost';`
+# Verificar puerto
+netstat -tuln | grep 3306
+```
 
-### Error de módulos Python
-- Reinstalar dependencias: `pip install -r requirements.txt`
-- Verificar versión de Python: `python --version`
+### Error: "Módulo no encontrado"
+```bash
+pip install -r requirements.txt --force-reinstall
+```
 
-## 📧 Soporte
+### Error: "Tabla no existe"
+```bash
+# Recrear base de datos
+docker-compose down -v
+docker-compose up -d
+```
 
-Para consultas o problemas, revisar:
-1. Los mensajes de error en consola
-2. Los logs de MySQL
-3. La configuración de conexión
+### Error: "Permission denied"
+```bash
+# Dar permisos a MySQL
+GRANT ALL PRIVILEGES ON reserva_salas.* TO 'root'@'%';
+FLUSH PRIVILEGES;
+```
 
-## 📄 Licencia
+## 📚 Documentación Adicional
+
+- [Informe Técnico](INFORME.md) - Decisiones de implementación
+- [API Reference](docs/API.md) - Endpoints disponibles
+- [Guía de Desarrollo](docs/DESARROLLO.md) - Para contribuidores
+
+## 🤝 Contribuir
+
+1. Fork del proyecto
+2. Crear rama feature (`git checkout -b feature/AmazingFeature`)
+3. Commit cambios (`git commit -m 'Add AmazingFeature'`)
+4. Push a rama (`git push origin feature/AmazingFeature`)
+5. Abrir Pull Request
+
+## 📝 Licencia
 
 Este proyecto es de código abierto para fines educativos.
 
+## 👥 Autores
+
+- **Equipo de Desarrollo** - Sistema de Gestión Universitaria
+
+## 📧 Contacto
+
+Para consultas: repositorio@universidad.edu
+
 ---
 
-**Desarrollado para**: Sistema de Gestión Universitaria  
-**Versión**: 1.0  
-**Fecha**: 2025
+**Versión**: 2.0.0  
+**Última actualización**: Enero 2025  
+**Estado**: Producción ✅
