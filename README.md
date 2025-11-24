@@ -379,35 +379,3 @@ docker-compose up -d
 GRANT ALL PRIVILEGES ON reserva_salas.* TO 'root'@'%';
 FLUSH PRIVILEGES;
 ```
-
-## 📚 Documentación Adicional
-
-- [Informe Técnico](INFORME.md) - Decisiones de implementación
-- [API Reference](docs/API.md) - Endpoints disponibles
-- [Guía de Desarrollo](docs/DESARROLLO.md) - Para contribuidores
-
-## 🤝 Contribuir
-
-1. Fork del proyecto
-2. Crear rama feature (`git checkout -b feature/AmazingFeature`)
-3. Commit cambios (`git commit -m 'Add AmazingFeature'`)
-4. Push a rama (`git push origin feature/AmazingFeature`)
-5. Abrir Pull Request
-
-## 📝 Licencia
-
-Este proyecto es de código abierto para fines educativos.
-
-## 👥 Autores
-
-- **Equipo de Desarrollo** - Sistema de Gestión Universitaria
-
-## 📧 Contacto
-
-Para consultas: repositorio@universidad.edu
-
----
-
-**Versión**: 2.0.0  
-**Última actualización**: Enero 2025  
-**Estado**: Producción ✅
